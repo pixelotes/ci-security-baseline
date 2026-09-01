@@ -47,5 +47,5 @@ Cada ola de despliegue tiene criterio de salida. Vigila:
    SARIF del job.
 2. Si bloquea una entrega, excepción local con `expires` corto (30 días) y el
    issue enlazado en `reason`.
-3. `@__ORG__/security` decide si la regla se ajusta, se reclasifica o se
+3. `@pixelotes/security` decide si la regla se ajusta, se reclasifica o se
    mantiene.

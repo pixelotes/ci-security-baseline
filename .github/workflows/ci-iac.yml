@@ -21,15 +21,15 @@ jobs:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
       - uses: azure/setup-helm@v4
-      - uses: __ORG__/__REPO__/actions/lint-iac@v1
+      - uses: pixelotes/composite-actions/actions/lint-iac@v1
 
   policy:
     name: checkov + trivy config
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: __ORG__/__REPO__/actions/scan-checkov@v1
-      - uses: __ORG__/__REPO__/actions/scan-trivy-fs@v1
+      - uses: pixelotes/composite-actions/actions/scan-checkov@v1
+      - uses: pixelotes/composite-actions/actions/scan-trivy-fs@v1
         with: { scanners: 'misconfig,secret' }
 
   gate:
@@ -39,7 +39,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - uses: __ORG__/__REPO__/actions/gate@v1
+      - uses: pixelotes/composite-actions/actions/gate@v1
         with:
           severity: ${{ inputs.severity-gate }}
           cutoff: ${{ inputs.cutoff-date }}

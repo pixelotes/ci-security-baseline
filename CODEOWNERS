@@ -1,5 +1,5 @@
 # Todo el baseline lo revisa seguridad: un cambio aquí llega a todos los repos
 # de la organización en el siguiente build.
-*                    @__ORG__/security
-/policy/             @__ORG__/security
-/actions/gate/       @__ORG__/security
+*                    @pixelotes/security
+/policy/             @pixelotes/security
+/actions/gate/       @pixelotes/security

@@ -23,7 +23,7 @@ while IFS= read -r line; do
   file="${line%%:*}"; rest="${line#*:}"
   ref="$(printf '%s' "$rest" | sed -E 's/.*uses:[[:space:]]+([^[:space:]]+).*/\1/')"
   repo="${ref%@*}"; tag="${ref#*@}"
-  case "$repo" in actions/*|__ORG__/*|./*) continue ;; esac
+  case "$repo" in actions/*|pixelotes/*|./*) continue ;; esac
   case "$tag" in [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]*) continue ;; esac
 
   sha="$(gh api "repos/${repo}/commits/${tag}" --jq .sha 2>/dev/null || true)"

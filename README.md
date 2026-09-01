@@ -34,8 +34,8 @@ cp baseline.conf.example baseline.conf   # opcional: destinos de publicación
 
 `set-org.sh` es necesario porque GitHub **no admite expresiones en `uses:`**:
 la organización y el nombre del repositorio tienen que aparecer literales en
-cada referencia. Por eso el repo se publica con los marcadores `__ORG__` y
-`__REPO__` sin resolver.
+cada referencia. Por eso el repo se publica con los marcadores `pixelotes` y
+`composite-actions` sin resolver.
 
 ## Uso
 

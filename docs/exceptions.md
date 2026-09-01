@@ -8,7 +8,7 @@ exceptions:
     tool: trivy                 # opcional: acota a una herramienta
     scope: 'pom.xml'            # opcional: glob sobre la ruta
     reason: 'No explotable: el parser XML no recibe entrada externa'
-    owner: '@__ORG__/team-alpha'
+    owner: '@pixelotes/team-alpha'
     expires: '2026-12-15'       # OBLIGATORIO
 ```
 
@@ -54,6 +54,6 @@ scope: '**'                               # equivale a no ponerlo
 
 ## Revisión
 
-`CODEOWNERS` pone a `@__ORG__/security` como revisor obligatorio de
+`CODEOWNERS` pone a `@pixelotes/security` como revisor obligatorio de
 `.security-baseline.yml`. Una excepción sin revisar es la forma más silenciosa
 de desactivar el gate.
