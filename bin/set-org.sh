@@ -37,8 +37,13 @@ sed_i() {
   if sed --version >/dev/null 2>&1; then sed -i "$@"; else sed -i '' "$@"; fi
 }
 
+SELF="bin/set-org.sh"
+
 count=0
 while IFS= read -r f; do
+  # el propio script contiene los marcadores como parte de su código:
+  # estamparlos aquí lo dejaría inservible para la próxima vez
+  [ "$f" = "$SELF" ] && continue
   grep -q '__ORG__\|__REPO__' "$f" || continue
   sed_i "s|__ORG__|${ORG}|g; s|__REPO__|${REPO}|g" "$f"
   echo "  $f"
@@ -47,9 +52,14 @@ done < <(git ls-files 2>/dev/null || find . -type f -not -path './.git/*')
 
 echo
 echo "Estampado ${ORG}/${REPO} en ${count} fichero(s)."
-if grep -rq '__ORG__\|__REPO__' . 2>/dev/null; then
+
+# se comprueban los mismos ficheros que se estampan: mirar todo el árbol daba
+# falsos positivos con restos del editor y con el propio script
+restantes="$(git ls-files 2>/dev/null | grep -v "^${SELF}$" \
+  | xargs grep -ln '__ORG__\|__REPO__' 2>/dev/null || true)"
+if [ -n "$restantes" ]; then
   echo "AVISO: todavía quedan marcadores sin sustituir:" >&2
-  grep -rn '__ORG__\|__REPO__' . >&2
+  printf '%s\n' "$restantes" >&2
   exit 1
 fi
-echo "No quedan marcadores."
+echo "No quedan marcadores en los ficheros versionados."
