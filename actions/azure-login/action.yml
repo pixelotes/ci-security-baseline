@@ -1,0 +1,31 @@
+name: 'Login en Azure por OIDC'
+description: >
+  Autenticación federada contra Entra ID. No hay secretos inyectados en el
+  repositorio: el perímetro completo es el subject de la federated credential,
+  que debe estar acotado por environment (repo:ORG/REPO:environment:prod) y
+  nunca con comodín — si no, un workflow de un PR obtiene token de producción.
+inputs:
+  client-id:       { required: true, description: 'App registration' }
+  tenant-id:       { required: true, description: 'Tenant de Entra ID' }
+  subscription-id: { required: true, description: 'Suscripción' }
+  keyvault:        { required: false, default: '', description: 'Key Vault del que leer secretos' }
+  secrets:         { required: false, default: '', description: 'Nombres separados por coma' }
+runs:
+  using: composite
+  steps:
+    - uses: azure/login@v2
+      with:
+        client-id: ${{ inputs.client-id }}
+        tenant-id: ${{ inputs.tenant-id }}
+        subscription-id: ${{ inputs.subscription-id }}
+    - if: inputs.keyvault != '' && inputs.secrets != ''
+      shell: bash
+      run: |
+        set -euo pipefail
+        IFS=',' read -ra NAMES <<< "${{ inputs.secrets }}"
+        for n in "${NAMES[@]}"; do
+          n="$(echo "$n" | xargs)"
+          v=$(az keyvault secret show --vault-name "${{ inputs.keyvault }}" --name "$n" --query value -o tsv)
+          echo "::add-mask::$v"
+          echo "${n//-/_}=$v" >> "$GITHUB_ENV"
+        done

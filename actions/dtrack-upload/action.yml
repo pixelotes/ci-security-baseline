@@ -1,0 +1,57 @@
+name: 'Dependency-Track: subir SBOM y evaluar política'
+description: >
+  Sube el CycloneDX a Dependency-Track y consulta las violaciones de política.
+  Este es el gate de dependencias en CD: tiene contexto de VEX, histórico y
+  responsable, no solo un número como un umbral de Trivy.
+
+  Dependency-Track es además el reemplazo de la mitad de Xray que Azure
+  Artifacts no cubre: la reevaluación continua de artefactos ya publicados.
+inputs:
+  sbom:            { description: 'Ruta del CycloneDX', required: true }
+  project-name:    { description: 'Nombre del proyecto en DT', required: true }
+  project-version: { description: 'Versión (tag)', required: true }
+  base-url:        { description: 'URL de Dependency-Track', required: true }
+  api-key:         { description: 'API key de DT (desde Key Vault)', required: true }
+  fail-on:         { description: 'critical | high | medium | none', default: 'high' }
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        DT_URL: ${{ inputs.base-url }}
+        DT_KEY: ${{ inputs.api-key }}
+      run: |
+        set -euo pipefail
+        echo "Subiendo SBOM a Dependency-Track…"
+        TOKEN=$(curl -sSf -X POST "$DT_URL/api/v1/bom" \
+          -H "X-Api-Key: $DT_KEY" \
+          -F "autoCreate=true" \
+          -F "projectName=${{ inputs.project-name }}" \
+          -F "projectVersion=${{ inputs.project-version }}" \
+          -F "bom=@${{ inputs.sbom }}" | jq -r '.token')
+
+        echo "Esperando al procesado (token $TOKEN)…"
+        for _ in $(seq 1 60); do
+          PROC=$(curl -sSf "$DT_URL/api/v1/bom/token/$TOKEN" -H "X-Api-Key: $DT_KEY" | jq -r '.processing')
+          [ "$PROC" = "false" ] && break
+          sleep 5
+        done
+
+        UUID=$(curl -sSf -G "$DT_URL/api/v1/project/lookup" -H "X-Api-Key: $DT_KEY" \
+          --data-urlencode "name=${{ inputs.project-name }}" \
+          --data-urlencode "version=${{ inputs.project-version }}" | jq -r '.uuid')
+
+        mkdir -p reports
+        curl -sSf "$DT_URL/api/v1/violation/project/$UUID" -H "X-Api-Key: $DT_KEY" \
+          > reports/dtrack-violations.json
+
+        curl -sSf "$DT_URL/api/v1/finding/project/$UUID" -H "X-Api-Key: $DT_KEY" \
+          > reports/dtrack-findings.json
+
+        python3 "${{ github.action_path }}/evaluate.py" \
+          --violations reports/dtrack-violations.json \
+          --findings   reports/dtrack-findings.json \
+          --fail-on    "${{ inputs.fail-on }}"
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with: { name: dtrack-report, path: reports/dtrack-*.json, if-no-files-found: warn }

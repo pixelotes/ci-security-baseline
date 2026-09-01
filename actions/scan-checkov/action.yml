@@ -1,0 +1,17 @@
+name: 'Checkov (IaC)'
+description: 'Terraform, Helm, manifests de Kubernetes y Dockerfile.'
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: pip install --quiet checkov
+    - shell: bash
+      run: |
+        mkdir -p reports
+        checkov -d . --framework terraform helm kubernetes dockerfile \
+          --output sarif --output-file-path reports \
+          --soft-fail --quiet || true
+        [ -f reports/results_sarif.sarif ] && mv reports/results_sarif.sarif reports/checkov.sarif || true
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with: { name: sarif-checkov, path: reports/checkov.sarif, if-no-files-found: warn }

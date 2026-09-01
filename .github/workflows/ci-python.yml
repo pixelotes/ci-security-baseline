@@ -1,0 +1,81 @@
+# Muchos repos Python no tienen pyproject.toml en la raíz: los requirements
+# viven en subdirectorios. El módulo descubre ficheros; no asume rutas.
+name: baseline · python
+
+on:
+  workflow_call:
+    inputs:
+      python-version: { type: string, default: '3.12' }
+      severity-gate:  { type: string, default: 'high' }
+      cutoff-date:    { type: string, default: '' }
+      run-container:  { type: boolean, default: false }
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  build:
+    name: install + tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache: pip
+      - name: Instalar dependencias (descubrimiento, no ruta fija)
+        run: |
+          set -euo pipefail
+          if [ -f pyproject.toml ]; then
+            pip install -e '.[dev]' 2>/dev/null || pip install -e . || true
+          fi
+          # muchos repos del parque tienen requirements en subdirectorios
+          while IFS= read -r req; do
+            echo "→ $req"
+            pip install -r "$req" || true
+          done < <(find . -maxdepth 3 -name 'requirements*.txt' -not -path './.git/*')
+      - run: pytest -q || echo "::warning::sin tests o tests fallando"
+
+  lint:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '${{ inputs.python-version }}' }
+      - uses: __ORG__/security-baseline/actions/lint-python@v1
+
+  sast:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # p/python incluye las reglas ex-bandit, que en el linter solo avisan
+      # y aquí sí cuentan para el gate.
+      - uses: __ORG__/security-baseline/actions/scan-semgrep@v1
+        with: { config: 'p/ci p/python p/secrets' }
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: __ORG__/security-baseline/actions/scan-gitleaks@v1
+
+  sca:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: __ORG__/security-baseline/actions/scan-trivy-fs@v1
+
+  gate:
+    needs: [build, lint, sast, secrets, sca]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: __ORG__/security-baseline/actions/gate@v1
+        with:
+          severity: ${{ inputs.severity-gate }}
+          cutoff: ${{ inputs.cutoff-date }}

@@ -1,0 +1,8 @@
+reports/
+*.sarif
+__pycache__/
+.pytest_cache/
+.venv/
+bin/gitleaks
+policy/gitleaks.local.toml
+baseline.conf

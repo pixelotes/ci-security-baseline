@@ -1,0 +1,109 @@
+# CD: publicación con cadena de suministro verificable.
+#
+# El contrato es distinto al de CI: aquí no hay presupuesto de tiempo, hay
+# presupuesto de trazabilidad. Cada publicación deja SBOM, inventario en
+# Dependency-Track y firma.
+name: baseline · cd publish
+
+on:
+  workflow_call:
+    inputs:
+      stack:            { type: string, required: true }   # jvm-maven | node | python | container
+      artifact-name:    { type: string, required: true }
+      version:          { type: string, required: true }
+      environment:      { type: string, default: 'prod' }
+      registry:         { type: string, default: '' }      # p.ej. myorg.azurecr.io
+      dtrack-url:       { type: string, required: true }
+      keyvault:         { type: string, required: true }
+      cosign-key-uri:   { type: string, default: '' }
+      sign-method:      { type: string, default: 'cosign-kms' }
+      dtrack-fail-on:   { type: string, default: 'high' }
+    secrets:
+      AZURE_CLIENT_ID:       { required: true }
+      AZURE_TENANT_ID:       { required: true }
+      AZURE_SUBSCRIPTION_ID: { required: true }
+
+permissions:
+  contents: read
+  id-token: write        # OIDC hacia Entra ID — solo aquí, nunca en CI
+  attestations: write
+
+jobs:
+  publish:
+    # El environment es lo que hace real el scoping OIDC: la federated
+    # credential se acota a repo:ORG/REPO:environment:<este>, y el
+    # environment lleva required reviewers.
+    environment: ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login en Azure (OIDC) y lectura de Key Vault
+        uses: __ORG__/security-baseline/actions/azure-login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          keyvault: ${{ inputs.keyvault }}
+          secrets: 'dtrack-api-key'
+
+      - name: Construir artefacto
+        id: build
+        run: |
+          set -euo pipefail
+          case "${{ inputs.stack }}" in
+            jvm-maven) ./mvnw -B -DskipTests package ;;
+            node)      npm ci && npm run build --if-present ;;
+            python)    pip install build && python -m build ;;
+            container)
+              az acr login --name "$(echo '${{ inputs.registry }}' | cut -d. -f1)"
+              docker build -t "${{ inputs.registry }}/${{ inputs.artifact-name }}:${{ inputs.version }}" .
+              ;;
+          esac
+
+      - name: SBOM (CycloneDX)
+        id: sbom
+        uses: __ORG__/security-baseline/actions/sbom-syft@v1
+        with:
+          source: ${{ inputs.stack == 'container' && format('{0}/{1}:{2}', inputs.registry, inputs.artifact-name, inputs.version) || '.' }}
+          name: ${{ inputs.artifact-name }}
+
+      - name: Dependency-Track — inventario y gate de política
+        uses: __ORG__/security-baseline/actions/dtrack-upload@v1
+        with:
+          sbom: ${{ steps.sbom.outputs.path }}
+          project-name: ${{ github.event.repository.name }}
+          project-version: ${{ inputs.version }}
+          base-url: ${{ inputs.dtrack-url }}
+          api-key: ${{ env.dtrack_api_key }}
+          fail-on: ${{ inputs.dtrack-fail-on }}
+
+      - name: Publicar
+        run: |
+          set -euo pipefail
+          case "${{ inputs.stack }}" in
+            container)
+              docker push "${{ inputs.registry }}/${{ inputs.artifact-name }}:${{ inputs.version }}" ;;
+            jvm-maven)
+              ./mvnw -B -DskipTests deploy ;;                       # Azure Artifacts
+            node)
+              npm publish ;;                                        # Azure Artifacts
+            python)
+              pip install twine && twine upload dist/* ;;
+          esac
+
+      - name: Firmar
+        if: inputs.stack == 'container'
+        uses: __ORG__/security-baseline/actions/sign-artifact@v1
+        with:
+          target: ${{ inputs.registry }}/${{ inputs.artifact-name }}:${{ inputs.version }}
+          method: ${{ inputs.sign-method }}
+          key-uri: ${{ inputs.cosign-key-uri }}
+
+      - name: Verificar lo publicado antes de promover
+        if: inputs.stack == 'container'
+        run: |
+          set -euo pipefail
+          IMG="${{ inputs.registry }}/${{ inputs.artifact-name }}:${{ inputs.version }}"
+          cosign verify --key "${{ inputs.cosign-key-uri }}" "$IMG"
+          trivy image --severity CRITICAL,HIGH --exit-code 1 "$IMG"

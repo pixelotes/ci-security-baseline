@@ -1,0 +1,87 @@
+# Los tres gestores suelen convivir en un parque grande, así que el módulo
+# detecta el lockfile en vez de imponer uno.
+name: baseline · node
+
+on:
+  workflow_call:
+    inputs:
+      node-version:  { type: string, default: '22' }
+      severity-gate: { type: string, default: 'high' }
+      cutoff-date:   { type: string, default: '' }
+      run-container: { type: boolean, default: false }
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      pm: ${{ steps.d.outputs.node-pm }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: d
+        uses: __ORG__/security-baseline/actions/detect-stack@v1
+
+  build:
+    name: build + tests
+    needs: detect
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: ${{ needs.detect.outputs.pm }}
+      - name: Instalar dependencias
+        run: |
+          case "${{ needs.detect.outputs.pm }}" in
+            yarn) corepack enable && yarn install --immutable ;;
+            pnpm) corepack enable && pnpm install --frozen-lockfile ;;
+            *)    npm ci ;;
+          esac
+      - run: npm test --if-present
+
+  lint:
+    needs: detect
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ inputs.node-version }}' }
+      - uses: __ORG__/security-baseline/actions/lint-node@v1
+        with: { package-manager: '${{ needs.detect.outputs.pm }}' }
+
+  sast:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: __ORG__/security-baseline/actions/scan-semgrep@v1
+        with: { config: 'p/ci p/javascript p/typescript p/secrets' }
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: __ORG__/security-baseline/actions/scan-gitleaks@v1
+
+  sca:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: __ORG__/security-baseline/actions/scan-trivy-fs@v1
+
+  gate:
+    needs: [build, lint, sast, secrets, sca]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: __ORG__/security-baseline/actions/gate@v1
+        with:
+          severity: ${{ inputs.severity-gate }}
+          cutoff: ${{ inputs.cutoff-date }}

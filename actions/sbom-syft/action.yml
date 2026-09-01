@@ -1,0 +1,23 @@
+name: 'SBOM con Syft'
+description: 'Genera CycloneDX 1.6 del artefacto o de la imagen.'
+inputs:
+  source: { description: 'Ruta o referencia de imagen', default: '.' }
+  name:   { description: 'Nombre base del fichero', default: 'sbom' }
+outputs:
+  path: { description: 'Ruta del SBOM generado', value: 'reports/${{ inputs.name }}.cdx.json' }
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        set -euo pipefail
+        mkdir -p reports
+        curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh \
+          | sh -s -- -b /usr/local/bin
+        syft "${{ inputs.source }}" \
+          -o cyclonedx-json="reports/${{ inputs.name }}.cdx.json"
+    - uses: actions/upload-artifact@v4
+      with:
+        name: sbom-${{ inputs.name }}
+        path: reports/${{ inputs.name }}.cdx.json
+        retention-days: 90

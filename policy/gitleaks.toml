@@ -1,0 +1,31 @@
+# Allowlist central de Gitleaks para el baseline de la organización.
+#
+# Las excepciones POR REPOSITORIO no van aquí: van en su .security-baseline.yml,
+# donde llevan owner y fecha de caducidad. Este fichero es solo para patrones
+# corporativos que serían falso positivo en cualquier repo.
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "baseline-internal-token"
+description = "Token de servicio interno de la organización"
+regex = '''(?i)acme_(sk|pat)_[a-z0-9]{32,}'''
+tags = ["internal", "token"]
+
+[allowlist]
+description = "Falsos positivos corporativos"
+paths = [
+  '''(.*?)(test|tests|spec|fixtures|__mocks__)(/|\\).*''',
+  '''(.*?)\.(md|adoc|svg|lock)$''',
+  '''(.*?)package-lock\.json$''',
+  '''(.*?)yarn\.lock$''',
+]
+regexes = [
+  # Los patrones específicos de la organización (dominios de simulación de
+  # phishing, prefijos de token internos) NO van aquí: este fichero se
+  # versiona y documentaría en claro justo lo que no interesa publicar.
+  # Ponlos en policy/gitleaks.local.toml, fuera del control de versiones.
+  '''EXAMPLE[_-]?KEY''',
+  '''00000000-0000-0000-0000-000000000000''',
+]

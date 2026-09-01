@@ -1,0 +1,45 @@
+# Terraform, Helm, Kubernetes y Ansible. Igual que container, es un módulo
+# aditivo, no una alternativa.
+name: baseline · iac
+
+on:
+  workflow_call:
+    inputs:
+      standalone:    { type: boolean, default: false }
+      severity-gate: { type: string, default: 'high' }
+      cutoff-date:   { type: string, default: '' }
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - uses: azure/setup-helm@v4
+      - uses: __ORG__/security-baseline/actions/lint-iac@v1
+
+  policy:
+    name: checkov + trivy config
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: __ORG__/security-baseline/actions/scan-checkov@v1
+      - uses: __ORG__/security-baseline/actions/scan-trivy-fs@v1
+        with: { scanners: 'misconfig,secret' }
+
+  gate:
+    if: always() && inputs.standalone
+    needs: [lint, policy]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: __ORG__/security-baseline/actions/gate@v1
+        with:
+          severity: ${{ inputs.severity-gate }}
+          cutoff: ${{ inputs.cutoff-date }}

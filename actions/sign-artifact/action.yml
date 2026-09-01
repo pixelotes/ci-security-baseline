@@ -1,0 +1,30 @@
+name: 'Firmar artefacto'
+description: >
+  Firma con cosign usando clave en Key Vault (azurekms://) o con Notation.
+
+  Cosign keyless con el OIDC de Actions sería más cómodo, pero publica la
+  identidad del repositorio en el log público de Rekor: nombres de repos
+  internos y de clientes, expuestos. En un parque con repositorios de
+  clientes, no es aceptable.
+inputs:
+  target:   { required: true, description: 'Referencia de imagen o ruta del fichero' }
+  method:   { default: 'cosign-kms', description: 'cosign-kms | notation' }
+  key-uri:  { default: '', description: 'azurekms://VAULT.vault.azure.net/KEY' }
+  cert-id:  { default: '', description: 'Certificado de firma para Notation' }
+runs:
+  using: composite
+  steps:
+    - if: inputs.method == 'cosign-kms'
+      uses: sigstore/cosign-installer@v3
+    - if: inputs.method == 'cosign-kms'
+      shell: bash
+      run: |
+        set -euo pipefail
+        cosign sign --yes --key "${{ inputs.key-uri }}" "${{ inputs.target }}"
+    - if: inputs.method == 'notation'
+      shell: bash
+      run: |
+        set -euo pipefail
+        # Camino nativo de ACR: se verifica desde AKS por policy.
+        az acr login --name "$(echo "${{ inputs.target }}" | cut -d. -f1)"
+        notation sign --key "${{ inputs.cert-id }}" "${{ inputs.target }}"

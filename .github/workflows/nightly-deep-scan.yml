@@ -1,0 +1,68 @@
+# Lo que no cabe en el presupuesto de 10 minutos del PR.
+#
+# Aquí va el historial completo de secretos (TruffleHog verificado), el
+# re-escaneo de las imágenes ya publicadas en ACR y el SCA exhaustivo. Con
+# 3.000 minutos incluidos al mes, esto es lo que mantiene el PR barato.
+name: baseline · nightly deep scan
+
+on:
+  workflow_call:
+    inputs:
+      registry:  { type: string, default: '' }
+      images:    { type: string, default: '' }   # lista separada por comas
+      severity-gate: { type: string, default: 'critical' }
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  secrets-history:
+    name: trufflehog (historial, verificados)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: __ORG__/security-baseline/actions/scan-trufflehog@v1
+
+  sca-full:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: __ORG__/security-baseline/actions/scan-trivy-fs@v1
+        with: { scanners: 'vuln,secret,license,misconfig' }
+
+  registry-rescan:
+    name: re-scan de imágenes publicadas
+    if: inputs.images != ''
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        image: ${{ fromJSON(format('[{0}]', inputs.images)) }}
+    steps:
+      - uses: __ORG__/security-baseline/actions/scan-trivy-image@v1
+        with: { image: '${{ inputs.registry }}/${{ matrix.image }}' }
+
+  report:
+    needs: [secrets-history, sca-full]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - id: gate
+        continue-on-error: true
+        uses: __ORG__/security-baseline/actions/gate@v1
+        with:
+          severity: ${{ inputs.severity-gate }}
+          comment-pr: 'false'
+      - name: Abrir incidente si hay bloqueantes
+        if: steps.gate.outputs.passed == 'false'
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: "Security baseline · hallazgos críticos en el escaneo nocturno"
+          content-filepath: reports/gate-summary.md
+          labels: security,nightly

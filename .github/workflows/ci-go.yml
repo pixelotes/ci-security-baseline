@@ -1,0 +1,63 @@
+# Módulo ligero.
+name: baseline · go
+
+on:
+  workflow_call:
+    inputs:
+      go-version:    { type: string, default: '1.23' }
+      severity-gate: { type: string, default: 'high' }
+      cutoff-date:   { type: string, default: '' }
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: '${{ inputs.go-version }}', cache: true }
+      - run: go build ./...
+      - run: go test ./... -race
+
+  lint:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: golangci/golangci-lint-action@v6
+        with: { version: latest }
+
+  sast:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: __ORG__/security-baseline/actions/scan-semgrep@v1
+        with: { config: 'p/ci p/golang p/secrets' }
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: __ORG__/security-baseline/actions/scan-gitleaks@v1
+
+  sca:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: __ORG__/security-baseline/actions/scan-trivy-fs@v1
+
+  gate:
+    needs: [build, lint, sast, secrets, sca]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: __ORG__/security-baseline/actions/gate@v1
+        with:
+          severity: ${{ inputs.severity-gate }}
+          cutoff: ${{ inputs.cutoff-date }}

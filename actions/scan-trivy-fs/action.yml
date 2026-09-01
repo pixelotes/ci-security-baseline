@@ -1,0 +1,25 @@
+name: 'Trivy filesystem (SCA + licencias)'
+description: 'SCA sobre lockfiles. Motor único para SCA, IaC y contenedor.'
+inputs:
+  scanners: { description: 'vuln,secret,license,misconfig', default: 'vuln,license' }
+runs:
+  using: composite
+  steps:
+    - name: Caché de la BD de vulnerabilidades
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/trivy
+        key: trivy-db-${{ github.run_id }}
+        restore-keys: trivy-db-
+    - uses: aquasecurity/trivy-action@0.28.0
+      with:
+        scan-type: fs
+        scan-ref: .
+        scanners: ${{ inputs.scanners }}
+        format: sarif
+        output: reports/trivy-fs.sarif
+        exit-code: '0'   # decide el gate
+        cache-dir: ~/.cache/trivy
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with: { name: sarif-trivy-fs, path: reports/trivy-fs.sarif, if-no-files-found: warn }

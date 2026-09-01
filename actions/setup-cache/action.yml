@@ -1,0 +1,43 @@
+name: 'Caché de dependencias'
+description: >
+  Con runners hosted y 3.000 minutos incluidos al mes, la caché no es una
+  optimización: es lo que hace viable extenderlo a toda la organización.
+inputs:
+  stack: { required: true, description: 'jvm-maven | jvm-gradle | node | python | go' }
+runs:
+  using: composite
+  steps:
+    - if: inputs.stack == 'jvm-maven'
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2/repository
+        key: m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: m2-
+    - if: inputs.stack == 'jvm-gradle'
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: gradle-${{ hashFiles('**/*.gradle*') }}
+        restore-keys: gradle-
+    - if: inputs.stack == 'node'
+      uses: actions/cache@v4
+      with:
+        path: ~/.npm
+        key: node-${{ hashFiles('**/package-lock.json', '**/yarn.lock', '**/pnpm-lock.yaml') }}
+        restore-keys: node-
+    - if: inputs.stack == 'python'
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: pip-${{ hashFiles('**/requirements*.txt', '**/pyproject.toml') }}
+        restore-keys: pip-
+    - if: inputs.stack == 'go'
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: go-${{ hashFiles('**/go.sum') }}
+        restore-keys: go-

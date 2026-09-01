@@ -1,0 +1,19 @@
+name: 'TruffleHog (historial, solo verificados)'
+description: >
+  Historial completo con --only-verified: comprueba la credencial contra el
+  proveedor. Un hallazgo verificado es cierto por definición, así que este sí
+  bloquea y abre incidente. Va en la nocturna, no en el PR.
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        set -euo pipefail
+        mkdir -p reports
+        docker run --rm -v "$PWD:/repo" ghcr.io/trufflesecurity/trufflehog:latest \
+          git file:///repo --only-verified --json > reports/trufflehog.json || true
+        python3 "${{ github.action_path }}/to_sarif.py" \
+          reports/trufflehog.json reports/trufflehog.sarif
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with: { name: sarif-trufflehog, path: reports/trufflehog.sarif, if-no-files-found: warn }

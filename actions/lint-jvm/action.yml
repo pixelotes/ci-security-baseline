@@ -1,0 +1,17 @@
+name: 'Lint JVM'
+description: 'Checkstyle, PMD y Spotless en Maven; detekt y ktlint en Kotlin. No bloqueante.'
+inputs:
+  build-tool: { description: 'maven | gradle', default: 'maven' }
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        set -euo pipefail
+        if [ "${{ inputs.build-tool }}" = "maven" ]; then
+          ./mvnw -B -q checkstyle:check pmd:check spotless:check || \
+            echo "::warning::lint JVM con hallazgos — revisar (no bloquea el merge)"
+        else
+          ./gradlew --no-daemon detekt ktlintCheck || \
+            echo "::warning::lint Kotlin con hallazgos — revisar (no bloquea el merge)"
+        fi

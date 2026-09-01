@@ -1,0 +1,24 @@
+name: 'Trivy image'
+description: 'Vulnerabilidades, secretos y misconfig sobre la imagen construida.'
+inputs:
+  image: { description: 'Referencia de la imagen', required: true }
+runs:
+  using: composite
+  steps:
+    - uses: actions/cache@v4
+      with:
+        path: ~/.cache/trivy
+        key: trivy-db-${{ github.run_id }}
+        restore-keys: trivy-db-
+    - uses: aquasecurity/trivy-action@0.28.0
+      with:
+        scan-type: image
+        image-ref: ${{ inputs.image }}
+        scanners: 'vuln,secret,misconfig'
+        format: sarif
+        output: reports/trivy-image.sarif
+        exit-code: '0'
+        cache-dir: ~/.cache/trivy
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with: { name: sarif-trivy-image, path: reports/trivy-image.sarif, if-no-files-found: warn }

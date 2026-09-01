@@ -1,0 +1,24 @@
+name: 'Semgrep (SAST)'
+description: 'SAST del baseline. Emite SARIF y nunca falla por sí mismo: decide el gate.'
+inputs:
+  config:
+    description: 'Rulesets adicionales separados por espacio'
+    default: 'p/ci p/secrets'
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: pip install --quiet semgrep
+    - shell: bash
+      run: |
+        mkdir -p reports
+        # --error se omite deliberadamente: el corte lo pone el gate, no semgrep.
+        semgrep scan \
+          --sarif --output reports/semgrep.sarif \
+          --metrics off --quiet \
+          $(for c in ${{ inputs.config }}; do echo "--config=$c"; done) \
+          --config "${{ github.action_path }}/../../policy/semgrep" \
+          . || true
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with: { name: sarif-semgrep, path: reports/semgrep.sarif, if-no-files-found: warn }

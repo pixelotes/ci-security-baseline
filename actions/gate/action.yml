@@ -1,0 +1,73 @@
+name: 'Security baseline gate'
+description: >
+  Agrega los SARIF de todos los escáneres, normaliza la severidad, aplica las
+  excepciones de .security-baseline.yml y la fecha de corte, y decide si el PR
+  se bloquea. Es el único paso del pipeline que falla a propósito.
+inputs:
+  reports-dir:
+    description: 'Directorio con los SARIF descargados'
+    default: 'reports'
+  severity:
+    description: 'Umbral de bloqueo: critical | high | medium | low'
+    default: ''
+  cutoff:
+    description: 'Fecha de corte YYYY-MM-DD (sobreescribe la del repo)'
+    default: ''
+  comment-pr:
+    description: 'Publicar/actualizar el comentario en el PR'
+    default: 'true'
+outputs:
+  passed:
+    description: 'true si no hay hallazgos bloqueantes'
+    value: ${{ steps.run.outputs.passed }}
+  blocking-count:
+    description: 'Número de hallazgos bloqueantes'
+    value: ${{ steps.run.outputs.blocking-count }}
+runs:
+  using: composite
+  steps:
+    - name: Descargar los SARIF de los jobs de escaneo
+      uses: actions/download-artifact@v4
+      with:
+        pattern: sarif-*
+        path: ${{ inputs.reports-dir }}
+        merge-multiple: true
+
+    - name: Preparar Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Instalar dependencias del gate
+      shell: bash
+      run: pip install --quiet pyyaml
+
+    - name: Ejecutar el gate
+      id: run
+      shell: bash
+      # No lleva continue-on-error a propósito: este paso ES la decisión.
+      run: |
+        python "${{ github.action_path }}/gate.py" \
+          --reports "${{ inputs.reports-dir }}" \
+          --config .security-baseline.yml \
+          --severity-map "${{ github.action_path }}/../../policy/severity-map.yml" \
+          --repo . \
+          --severity "${{ inputs.severity }}" \
+          --cutoff "${{ inputs.cutoff }}"
+
+    - name: Comentar en el PR
+      if: always() && inputs.comment-pr == 'true' && github.event_name == 'pull_request'
+      uses: marocchino/sticky-pull-request-comment@v2
+      with:
+        header: security-baseline-gate
+        path: ${{ inputs.reports-dir }}/gate-summary.md
+
+    - name: Publicar el resultado agregado
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: gate-result
+        path: |
+          ${{ inputs.reports-dir }}/gate-summary.md
+          ${{ inputs.reports-dir }}/gate-result.json
+        retention-days: 30

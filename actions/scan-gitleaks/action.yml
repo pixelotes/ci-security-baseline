@@ -1,0 +1,25 @@
+name: 'Gitleaks (secretos en el diff)'
+description: >
+  Escanea solo el diff del PR. Rápido y con muchos falsos positivos, por eso
+  informa y no bloquea por sí solo. El bloqueo real lo aporta TruffleHog
+  verificado en la nocturna.
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        set -euo pipefail
+        mkdir -p reports bin
+        VER=8.28.0
+        curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${VER}/gitleaks_${VER}_linux_x64.tar.gz" \
+          | tar -xz -C bin gitleaks
+        BASE="${{ github.event.pull_request.base.sha }}"
+        RANGE=""
+        if [ -n "$BASE" ]; then RANGE="--log-opts=${BASE}..HEAD"; fi
+        ./bin/gitleaks detect --source . --no-banner --redact \
+          --config "${{ github.action_path }}/../../policy/gitleaks.toml" \
+          --report-format sarif --report-path reports/gitleaks.sarif \
+          $RANGE || true
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with: { name: sarif-gitleaks, path: reports/gitleaks.sarif, if-no-files-found: warn }

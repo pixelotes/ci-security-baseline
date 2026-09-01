@@ -1,0 +1,16 @@
+name: 'Lint Node / TypeScript'
+description: 'ESLint, comprobación de tipos y Prettier en modo check. No bloqueante.'
+inputs:
+  package-manager: { description: 'npm | yarn | pnpm', default: 'npm' }
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        set -uo pipefail
+        RUN="npm run"
+        [ "${{ inputs.package-manager }}" = "yarn" ] && RUN="yarn"
+        [ "${{ inputs.package-manager }}" = "pnpm" ] && RUN="pnpm run"
+        $RUN lint       || echo "::warning::eslint con hallazgos"
+        npx --yes tsc --noEmit || echo "::warning::errores de tipos"
+        $RUN format:check || true

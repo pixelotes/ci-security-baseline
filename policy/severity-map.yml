@@ -1,0 +1,41 @@
+# Normalización de severidad entre herramientas.
+#
+# Cada escáner usa su propia escala: Trivy habla CVSS, Semgrep habla
+# ERROR/WARNING, Checkov habla de checks. Sin esta tabla, "high" significa
+# cosas distintas en cada SARIF y el gate no puede decidir de forma coherente.
+#
+# Orden de precedencia dentro del gate:
+#   1. overrides de esta tabla (patrón glob sobre el ruleId)
+#   2. properties.security-severity (CVSS) si existe
+#   3. etiqueta textual de severidad de la herramienta
+#   4. levels de esta tabla, a partir del level SARIF
+
+levels:
+  error: high
+  warning: medium
+  note: low
+  none: info
+
+overrides:
+  # Un secreto verificado contra el proveedor es cierto por definición.
+  trufflehog:
+    '*': critical
+
+  # Gitleaks trabaja sobre el diff y tiene falsos positivos; informa alto pero
+  # no crítico. El bloqueo real de secretos lo aporta trufflehog en la nocturna.
+  gitleaks:
+    '*': high
+
+  semgrep:
+    '*.security.*': high
+    'generic.secrets.*': high
+
+  checkov:
+    # exposición pública de recursos: no admite discusión
+    'CKV_AZURE_*_public_*': critical
+    'CKV_AWS_*_public_*': critical
+
+  hadolint:
+    'DL3002': medium   # último usuario root
+    'DL3008': low      # versiones sin fijar en apt
+    'DL3018': low      # versiones sin fijar en apk

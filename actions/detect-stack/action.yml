@@ -1,0 +1,45 @@
+name: 'Detectar stack'
+description: >
+  Clasifica el repositorio por señales de build. Busca hasta dos niveles de
+  profundidad: muchos repos Python no tienen pyproject.toml ni requirements en
+  la raíz, sino en subdirectorios.
+outputs:
+  stacks:      { description: 'JSON array de stacks detectados', value: '${{ steps.d.outputs.stacks }}' }
+  has-maven:   { description: '', value: '${{ steps.d.outputs.has-maven }}' }
+  has-gradle:  { description: '', value: '${{ steps.d.outputs.has-gradle }}' }
+  has-node:    { description: '', value: '${{ steps.d.outputs.has-node }}' }
+  has-python:  { description: '', value: '${{ steps.d.outputs.has-python }}' }
+  has-go:      { description: '', value: '${{ steps.d.outputs.has-go }}' }
+  has-docker:  { description: '', value: '${{ steps.d.outputs.has-docker }}' }
+  has-iac:     { description: '', value: '${{ steps.d.outputs.has-iac }}' }
+  has-scripts: { description: '', value: '${{ steps.d.outputs.has-scripts }}' }
+  node-pm:     { description: 'npm | yarn | pnpm', value: '${{ steps.d.outputs.node-pm }}' }
+runs:
+  using: composite
+  steps:
+    - id: d
+      shell: bash
+      run: |
+        set -euo pipefail
+        found=()
+        has() { [ -n "$(find . -maxdepth 3 -not -path './.git/*' -name "$1" -print -quit)" ]; }
+        emit() { echo "$1=$2" >> "$GITHUB_OUTPUT"; }
+
+        if has 'pom.xml';            then found+=(jvm-maven);  emit has-maven true;  else emit has-maven false;  fi
+        if has 'build.gradle*';      then found+=(jvm-gradle); emit has-gradle true; else emit has-gradle false; fi
+        if has 'package.json';       then found+=(node);       emit has-node true;   else emit has-node false;   fi
+        if has 'requirements*.txt' || has 'pyproject.toml' || has 'setup.py'; then
+                                          found+=(python);     emit has-python true; else emit has-python false; fi
+        if has 'go.mod';             then found+=(go);         emit has-go true;     else emit has-go false;     fi
+        if has 'Dockerfile*';        then found+=(container);  emit has-docker true; else emit has-docker false; fi
+        if has '*.tf' || has 'Chart.yaml' || [ -d k8s ] || [ -d playbooks ]; then
+                                          found+=(iac);        emit has-iac true;    else emit has-iac false;    fi
+        if has '*.sh' || has '*.ps1'; then found+=(scripts);   emit has-scripts true; else emit has-scripts false; fi
+
+        pm=npm
+        [ -f yarn.lock ] && pm=yarn
+        [ -f pnpm-lock.yaml ] && pm=pnpm
+        emit node-pm "$pm"
+
+        printf 'stacks=%s\n' "$(printf '%s\n' "${found[@]:-}" | grep -v '^$' | jq -R . | jq -cs .)" >> "$GITHUB_OUTPUT"
+        echo "Stacks detectados: ${found[*]:-ninguno}"

@@ -1,0 +1,61 @@
+# NO es alternativa a los módulos de lenguaje: es un añadido. Un repo Java con
+# Dockerfile y charts llama a los tres, y el gate corre una sola vez
+# consumiendo los artefactos de todos.
+name: baseline · container
+
+on:
+  workflow_call:
+    inputs:
+      dockerfile:   { type: string, default: 'Dockerfile' }
+      context:      { type: string, default: '.' }
+      image-name:   { type: string, default: '' }
+      standalone:
+        type: boolean
+        default: false
+        description: 'true si este módulo corre solo y debe ejecutar el gate'
+      severity-gate: { type: string, default: 'high' }
+      cutoff-date:   { type: string, default: '' }
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  lint:
+    name: hadolint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: __ORG__/security-baseline/actions/lint-docker@v1
+
+  scan:
+    name: build + trivy image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Construir (sin publicar)
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ inputs.context }}
+          file: ${{ inputs.dockerfile }}
+          push: false
+          load: true
+          tags: local/scan:${{ github.sha }}
+          # sin caché de capas este módulo es el más caro de todo el baseline
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - uses: __ORG__/security-baseline/actions/scan-trivy-image@v1
+        with: { image: 'local/scan:${{ github.sha }}' }
+
+  gate:
+    if: always() && inputs.standalone
+    needs: [lint, scan]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: __ORG__/security-baseline/actions/gate@v1
+        with:
+          severity: ${{ inputs.severity-gate }}
+          cutoff: ${{ inputs.cutoff-date }}

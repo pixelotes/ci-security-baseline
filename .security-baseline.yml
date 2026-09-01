@@ -1,0 +1,9 @@
+# El baseline se aplica a sí mismo (ola 0 del despliegue). Si el gate no puede
+# pasar aquí, no está listo para el resto de la organización.
+version: 1
+
+gate:
+  severity: high
+  # repo nuevo: sin deuda previa que tolerar
+
+exceptions: []

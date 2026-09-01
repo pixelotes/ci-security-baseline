@@ -1,0 +1,21 @@
+name: 'Lint IaC'
+description: 'terraform fmt/validate, tflint, ansible-lint, helm lint y kubeconform.'
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        set -uo pipefail
+        if compgen -G "**/*.tf" > /dev/null 2>&1 || [ -n "$(find . -name '*.tf' -print -quit)" ]; then
+          terraform fmt -check -recursive || echo "::warning::terraform fmt pendiente"
+          terraform init -backend=false >/dev/null 2>&1 && terraform validate || true
+          curl -sSfL https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+          tflint --recursive || echo "::warning::tflint con hallazgos"
+        fi
+        if [ -d playbooks ] || [ -d ansible ]; then
+          pip install --quiet ansible-lint && ansible-lint || echo "::warning::ansible-lint con hallazgos"
+        fi
+        for chart in $(find . -name Chart.yaml -not -path './.git/*'); do
+          helm lint "$(dirname "$chart")" || echo "::warning::helm lint en $chart"
+          helm template "$(dirname "$chart")" | kubeconform -strict -summary - || true
+        done

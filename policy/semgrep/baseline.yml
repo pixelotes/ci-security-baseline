@@ -1,0 +1,51 @@
+# Reglas propias del baseline. Complementan a los rulesets públicos
+# (p/ci, p/secrets y el del lenguaje), no los sustituyen.
+rules:
+  - id: baseline-azure-connection-string
+    languages: [generic]
+    severity: ERROR
+    message: >
+      Cadena de conexión de Azure embebida en el código. Los secretos viven en
+      Key Vault y se recuperan por OIDC; no se inyectan en el repositorio.
+    metadata:
+      security-severity: '9.1'
+      category: security
+    pattern-regex: '(?i)(DefaultEndpointsProtocol|AccountKey|SharedAccessSignature)=[^;\s"'']{10,}'
+
+  - id: baseline-github-oidc-wildcard-subject
+    languages: [yaml]
+    severity: ERROR
+    message: >
+      Federated credential con subject demasiado amplio. Debe acotarse por
+      environment (repo:ORG/REPO:environment:prod); con comodín, un workflow
+      disparado por un pull request obtiene token de producción.
+    metadata:
+      security-severity: '8.8'
+      category: security
+    pattern-regex: 'subject:\s*[''"]?repo:[^:\s]+/[^:\s]+:(\*|ref:refs/heads/\*)'
+
+  - id: baseline-workflow-id-token-in-pr
+    languages: [yaml]
+    severity: WARNING
+    message: >
+      id-token write en un workflow disparable por pull_request. Sin ese
+      permiso no hay token OIDC posible: es la defensa en profundidad que
+      protege Key Vault aunque Entra esté mal configurado.
+    metadata:
+      security-severity: '6.5'
+      category: security
+    patterns:
+      - pattern-regex: 'on:[\s\S]{0,400}pull_request'
+      - pattern-regex: 'id-token:\s*write'
+
+  - id: baseline-unpinned-third-party-action
+    languages: [yaml]
+    severity: WARNING
+    message: >
+      Action de terceros fijada por tag. Un tag es mutable: un compromiso de la
+      cuenta upstream se propaga a todos los repos en el siguiente build. Fija
+      por SHA completo (bin/pin-actions.sh lo hace).
+    metadata:
+      security-severity: '5.9'
+      category: supply-chain
+    pattern-regex: 'uses:\s+(?!actions/|__ORG__/|\./)[\w.-]+/[\w.-]+@v?\d[\w.-]*\s*$'
