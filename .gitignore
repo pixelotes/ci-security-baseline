@@ -1,8 +1,11 @@
 reports/
 *.sarif
+# los SARIF de ejemplo sí se versionan: probar-gate.sh los necesita
+!examples/sarif/*.sarif
 __pycache__/
 .pytest_cache/
 .venv/
 bin/gitleaks
+# configuración local que no debe publicarse
 policy/gitleaks.local.toml
 baseline.conf

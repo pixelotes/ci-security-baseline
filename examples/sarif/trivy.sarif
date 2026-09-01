@@ -1,0 +1,26 @@
+{
+  "version": "2.1.0",
+  "runs": [{
+    "tool": {"driver": {"name": "trivy"}},
+    "results": [
+      {"ruleId": "CVE-2018-18074", "level": "error",
+       "properties": {"security-severity": "9.8"},
+       "message": {"text": "requests 2.19.1: credenciales enviadas tras redirección"},
+       "locations": [{"physicalLocation": {
+         "artifactLocation": {"uri": "requirements.txt"},
+         "region": {"startLine": 2}}}]},
+      {"ruleId": "CVE-2020-1747", "level": "error",
+       "properties": {"security-severity": "9.8"},
+       "message": {"text": "pyyaml 5.3: ejecución de código con full_load"},
+       "locations": [{"physicalLocation": {
+         "artifactLocation": {"uri": "requirements.txt"},
+         "region": {"startLine": 3}}}]},
+      {"ruleId": "CVE-2021-0000", "level": "warning",
+       "properties": {"security-severity": "4.2"},
+       "message": {"text": "hallazgo medio: no debe bloquear"},
+       "locations": [{"physicalLocation": {
+         "artifactLocation": {"uri": "requirements.txt"},
+         "region": {"startLine": 2}}}]}
+    ]
+  }]
+}

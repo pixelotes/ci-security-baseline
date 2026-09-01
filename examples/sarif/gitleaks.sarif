@@ -1,0 +1,13 @@
+{
+  "version": "2.1.0",
+  "runs": [{
+    "tool": {"driver": {"name": "gitleaks"}},
+    "results": [
+      {"ruleId": "generic-api-key", "level": "error",
+       "message": {"text": "Posible token embebido en el código"},
+       "locations": [{"physicalLocation": {
+         "artifactLocation": {"uri": "src/app.py"},
+         "region": {"startLine": 12}}}]}
+    ]
+  }]
+}
