@@ -259,11 +259,16 @@ say "${DIM}Sin ella, aplicar el gate sobre un repo con deuda bloquea todos los P
 say "${DIM}la primera semana y alguien acaba desactivando el required check.${R}"
 DEFAULT_CUTOFF="$(date +%Y-%m-01)"
 if [ "$MODE" = "adopcion" ]; then
-  ask CUTOFF "Fecha de corte (YYYY-MM-DD, vacío = sin corte):" "$DEFAULT_CUTOFF"
+  ask CUTOFF "Fecha de corte (YYYY-MM-DD, o '-' para ninguna):" "$DEFAULT_CUTOFF"
 else
   # un repo nuevo no tiene deuda previa: no necesita corte
   ask CUTOFF "Fecha de corte (YYYY-MM-DD, vacío = sin corte):" ""
 fi
+# con un default propuesto, una respuesta vacía no puede significar "ninguna":
+# hace falta una forma explícita de decirlo
+case "$(printf '%s' "$CUTOFF" | tr '[:upper:]' '[:lower:]')" in
+  -|none|ninguna|no) CUTOFF="" ;;
+esac
 if [ -n "$CUTOFF" ]; then
   case "$CUTOFF" in
     [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]) : ;;
