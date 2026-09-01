@@ -324,7 +324,7 @@ def render(findings: list[Finding], cfg: Config, problems: list[str]) -> str:
             out.append(f"- `{f.rule_id}` en `{f.path or '—'}` — {f.note}")
         out += ["", "</details>", ""]
 
-    out.append("<sub>Generado por `__ORG__/security-baseline` · "
+    out.append("<sub>Generado por `__ORG__/__REPO__` · "
                "las excepciones se declaran en `.security-baseline.yml` y caducan siempre.</sub>")
     return "\n".join(out)
 

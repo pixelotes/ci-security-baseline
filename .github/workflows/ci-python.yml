@@ -44,7 +44,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: '${{ inputs.python-version }}' }
-      - uses: __ORG__/security-baseline/actions/lint-python@v1
+      - uses: __ORG__/__REPO__/actions/lint-python@v1
 
   sast:
     runs-on: ubuntu-latest
@@ -52,7 +52,7 @@ jobs:
       - uses: actions/checkout@v4
       # p/python incluye las reglas ex-bandit, que en el linter solo avisan
       # y aquí sí cuentan para el gate.
-      - uses: __ORG__/security-baseline/actions/scan-semgrep@v1
+      - uses: __ORG__/__REPO__/actions/scan-semgrep@v1
         with: { config: 'p/ci p/python p/secrets' }
 
   secrets:
@@ -60,13 +60,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - uses: __ORG__/security-baseline/actions/scan-gitleaks@v1
+      - uses: __ORG__/__REPO__/actions/scan-gitleaks@v1
 
   sca:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: __ORG__/security-baseline/actions/scan-trivy-fs@v1
+      - uses: __ORG__/__REPO__/actions/scan-trivy-fs@v1
 
   gate:
     needs: [build, lint, sast, secrets, sca]
@@ -75,7 +75,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - uses: __ORG__/security-baseline/actions/gate@v1
+      - uses: __ORG__/__REPO__/actions/gate@v1
         with:
           severity: ${{ inputs.severity-gate }}
           cutoff: ${{ inputs.cutoff-date }}

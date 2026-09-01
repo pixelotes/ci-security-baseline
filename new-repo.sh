@@ -7,7 +7,7 @@
 #   .github/workflows/ci.yml   (llamador de ~15 líneas)
 #   .security-baseline.yml     (umbral, fecha de corte y excepciones)
 #
-# La lógica del pipeline NO se copia: vive en __ORG__/security-baseline y se
+# La lógica del pipeline NO se copia: vive en __ORG__/__REPO__ y se
 # referencia por tag. Por eso una mejora del baseline llega a todos los repos
 # moviendo el tag, sin abrir un PR por repositorio.
 #
@@ -40,7 +40,7 @@ die()  { printf '%s✗ %s%s\n' "$RD" "$*" "$R" >&2; exit 1; }
 # La org no viene cableada: se toma de baseline.conf, del entorno, o de gh.
 [ -f "$(dirname "$0")/baseline.conf" ] && . "$(dirname "$0")/baseline.conf"
 BASELINE_ORG="${BASELINE_ORG:-__ORG__}"
-BASELINE_REPO="${BASELINE_REPO:-security-baseline}"
+BASELINE_REPO="${BASELINE_REPO:-__REPO__}"
 BASELINE_REF="${BASELINE_REF:-v1}"
 DTRACK_URL_DEFAULT="${DTRACK_URL:-https://dependency-track.example.internal}"
 REGISTRY_DEFAULT="${ACR_REGISTRY:-myorg.azurecr.io}"

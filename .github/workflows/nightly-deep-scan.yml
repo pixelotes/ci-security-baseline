@@ -26,13 +26,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - uses: __ORG__/security-baseline/actions/scan-trufflehog@v1
+      - uses: __ORG__/__REPO__/actions/scan-trufflehog@v1
 
   sca-full:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: __ORG__/security-baseline/actions/scan-trivy-fs@v1
+      - uses: __ORG__/__REPO__/actions/scan-trivy-fs@v1
         with: { scanners: 'vuln,secret,license,misconfig' }
 
   registry-rescan:
@@ -43,7 +43,7 @@ jobs:
       matrix:
         image: ${{ fromJSON(format('[{0}]', inputs.images)) }}
     steps:
-      - uses: __ORG__/security-baseline/actions/scan-trivy-image@v1
+      - uses: __ORG__/__REPO__/actions/scan-trivy-image@v1
         with: { image: '${{ inputs.registry }}/${{ matrix.image }}' }
 
   report:
@@ -55,7 +55,7 @@ jobs:
         with: { fetch-depth: 0 }
       - id: gate
         continue-on-error: true
-        uses: __ORG__/security-baseline/actions/gate@v1
+        uses: __ORG__/__REPO__/actions/gate@v1
         with:
           severity: ${{ inputs.severity-gate }}
           comment-pr: 'false'

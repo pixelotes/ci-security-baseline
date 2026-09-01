@@ -26,14 +26,16 @@ security-baseline   .github/workflows/ci-*.yml  ← reusable workflows por stack
 ## Instalación
 
 ```bash
-git clone https://github.com/TU-ORG/security-baseline
-cd security-baseline
-./bin/set-org.sh TU-ORG          # estampa la org en las referencias uses:
+git clone https://github.com/TU-ORG/TU-REPO
+cd TU-REPO
+./bin/set-org.sh TU-ORG TU-REPO          # estampa org y repo en los uses:
 cp baseline.conf.example baseline.conf   # opcional: destinos de publicación
 ```
 
 `set-org.sh` es necesario porque GitHub **no admite expresiones en `uses:`**:
-la organización tiene que aparecer literal en cada referencia.
+la organización y el nombre del repositorio tienen que aparecer literales en
+cada referencia. Por eso el repo se publica con los marcadores `__ORG__` y
+`__REPO__` sin resolver.
 
 ## Uso
 

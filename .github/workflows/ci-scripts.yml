@@ -19,14 +19,14 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
-      - uses: __ORG__/security-baseline/actions/lint-scripts@v1
+      - uses: __ORG__/__REPO__/actions/lint-scripts@v1
 
   secrets:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - uses: __ORG__/security-baseline/actions/scan-gitleaks@v1
+      - uses: __ORG__/__REPO__/actions/scan-gitleaks@v1
 
   gate:
     if: always() && inputs.standalone
@@ -35,7 +35,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - uses: __ORG__/security-baseline/actions/gate@v1
+      - uses: __ORG__/__REPO__/actions/gate@v1
         with:
           severity: ${{ inputs.severity-gate }}
           cutoff: ${{ inputs.cutoff-date }}

@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: __ORG__/security-baseline/actions/scan-semgrep@v1
+      - uses: __ORG__/__REPO__/actions/scan-semgrep@v1
         with: { config: 'p/ci p/golang p/secrets' }
 
   secrets:
@@ -42,13 +42,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - uses: __ORG__/security-baseline/actions/scan-gitleaks@v1
+      - uses: __ORG__/__REPO__/actions/scan-gitleaks@v1
 
   sca:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: __ORG__/security-baseline/actions/scan-trivy-fs@v1
+      - uses: __ORG__/__REPO__/actions/scan-trivy-fs@v1
 
   gate:
     needs: [build, lint, sast, secrets, sca]
@@ -57,7 +57,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - uses: __ORG__/security-baseline/actions/gate@v1
+      - uses: __ORG__/__REPO__/actions/gate@v1
         with:
           severity: ${{ inputs.severity-gate }}
           cutoff: ${{ inputs.cutoff-date }}

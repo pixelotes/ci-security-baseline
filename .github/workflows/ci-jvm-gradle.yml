@@ -28,10 +28,12 @@ jobs:
         with:
           java-version: ${{ inputs.java-version }}
           distribution: temurin
-      - uses: __ORG__/security-baseline/actions/setup-cache@v1
+      - uses: __ORG__/__REPO__/actions/setup-cache@v1
         with: { stack: jvm-gradle }
       - name: Compilar y pasar tests
-        run: ./gradlew --no-daemon build
+        run: |
+          GRADLE=gradle; [ -x ./gradlew ] && GRADLE=./gradlew
+          "$GRADLE" --no-daemon build
       - name: Publicar cobertura en el PR
         if: always()
         uses: madrapps/jacoco-report@v1.7.1
@@ -49,7 +51,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with: { java-version: '${{ inputs.java-version }}', distribution: temurin }
-      - uses: __ORG__/security-baseline/actions/lint-jvm@v1
+      - uses: __ORG__/__REPO__/actions/lint-jvm@v1
         with: { build-tool: gradle }
 
   sast:
@@ -57,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: __ORG__/security-baseline/actions/scan-semgrep@v1
+      - uses: __ORG__/__REPO__/actions/scan-semgrep@v1
         with: { config: 'p/ci p/java p/secrets' }
 
   secrets:
@@ -66,14 +68,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - uses: __ORG__/security-baseline/actions/scan-gitleaks@v1
+      - uses: __ORG__/__REPO__/actions/scan-gitleaks@v1
 
   sca:
     name: trivy fs
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: __ORG__/security-baseline/actions/scan-trivy-fs@v1
+      - uses: __ORG__/__REPO__/actions/scan-trivy-fs@v1
 
   container:
     name: dockerfile + imagen
@@ -93,7 +95,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }   # el gate necesita historial para git blame
-      - uses: __ORG__/security-baseline/actions/gate@v1
+      - uses: __ORG__/__REPO__/actions/gate@v1
         with:
           severity: ${{ inputs.severity-gate }}
           cutoff: ${{ inputs.cutoff-date }}

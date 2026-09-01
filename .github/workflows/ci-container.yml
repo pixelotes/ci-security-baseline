@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: __ORG__/security-baseline/actions/lint-docker@v1
+      - uses: __ORG__/__REPO__/actions/lint-docker@v1
 
   scan:
     name: build + trivy image
@@ -45,7 +45,7 @@ jobs:
           # sin caché de capas este módulo es el más caro de todo el baseline
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - uses: __ORG__/security-baseline/actions/scan-trivy-image@v1
+      - uses: __ORG__/__REPO__/actions/scan-trivy-image@v1
         with: { image: 'local/scan:${{ github.sha }}' }
 
   gate:
@@ -55,7 +55,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - uses: __ORG__/security-baseline/actions/gate@v1
+      - uses: __ORG__/__REPO__/actions/gate@v1
         with:
           severity: ${{ inputs.severity-gate }}
           cutoff: ${{ inputs.cutoff-date }}
