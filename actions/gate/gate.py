@@ -85,10 +85,17 @@ def load_severity_map(path: Path) -> dict:
 
 def normalize_severity(tool: str, rule_id: str, level: str, props: dict, smap: dict) -> str:
     """Cada herramienta usa su propia escala. Esto las lleva a una sola."""
-    overrides = (smap.get("overrides") or {}).get(tool) or {}
-    for pattern, sev in overrides.items():
-        if fnmatch.fnmatch(rule_id, pattern):
-            return sev.lower()
+    # El nombre que pone cada herramienta en su SARIF no es la clave de la
+    # tabla ("Semgrep OSS", "Opengrep OSS", "Checkov"...), así que se compara
+    # sin distinguir mayúsculas y por contención: la clave `semgrep` casa con
+    # "Semgrep OSS". Con la comparación exacta los overrides nunca aplicaban.
+    tool_l = tool.lower()
+    for key, overrides in (smap.get("overrides") or {}).items():
+        if str(key).lower() not in tool_l:
+            continue
+        for pattern, sev in (overrides or {}).items():
+            if fnmatch.fnmatch(rule_id, pattern):
+                return sev.lower()
 
     # CVSS embebido: es la señal más fiable cuando existe (trivy, grype, semgrep)
     raw_cvss = props.get("security-severity")
@@ -127,6 +134,7 @@ def parse_sarif(path: Path, smap: dict) -> list[Finding]:
         return []
 
     findings: list[Finding] = []
+    seen: set[tuple] = set()
     for run in doc.get("runs", []):
         driver = ((run.get("tool") or {}).get("driver") or {})
         tool = driver.get("name") or path.stem
@@ -153,16 +161,21 @@ def parse_sarif(path: Path, smap: dict) -> list[Finding]:
                 loc_line = int((phys.get("region") or {}).get("startLine") or 0)
                 break
 
-            findings.append(
-                Finding(
-                    tool=tool,
-                    rule_id=rule_id,
-                    severity=severity,
-                    message=((res.get("message") or {}).get("text") or "").strip()[:400],
-                    path=loc_path.removeprefix("file://").lstrip("/"),
-                    line=loc_line,
-                )
+            finding = Finding(
+                tool=tool,
+                rule_id=rule_id,
+                severity=severity,
+                message=((res.get("message") or {}).get("text") or "").strip()[:400],
+                path=loc_path.removeprefix("file://").lstrip("/"),
+                line=loc_line,
             )
+            # Algunos escáneres (osv-scanner) emiten cada resultado dos veces:
+            # sin esto el conteo y la tabla del PR salen inflados.
+            ident = (finding.tool, finding.rule_id, finding.path, finding.line, finding.message)
+            if ident in seen:
+                continue
+            seen.add(ident)
+            findings.append(finding)
     return findings
 
 

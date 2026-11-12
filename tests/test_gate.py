@@ -206,3 +206,37 @@ def test_resultado_json_es_consumible(workspace):
     assert data["severity_threshold"] == "high"
     assert data["findings"][0]["severity"] == "critical"
     assert data["findings"][0]["status"] == "blocking"
+
+
+def test_overrides_match_the_tool_name_loosely():
+    """Los SARIF traen "Semgrep OSS", "Opengrep OSS"...; la clave es `semgrep`."""
+    smap = {"overrides": {"semgrep": {"*.security.*": "high"},
+                          "opengrep": {"*.security.*": "high"}}}
+    for tool in ("Semgrep OSS", "SEMGREP", "Opengrep OSS"):
+        sev = gate.normalize_severity(tool, "python.lang.security.x", "note", {}, smap)
+        assert sev == "high", tool
+    # una herramienta sin override sigue el camino normal
+    assert gate.normalize_severity("Trivy", "python.lang.security.x", "note", {}, smap) == "low"
+
+
+def test_shipped_severity_map_covers_opengrep_like_semgrep():
+    import yaml
+    from pathlib import Path
+    smap = yaml.safe_load(
+        (Path(__file__).resolve().parent.parent / "policy" / "severity-map.yml").read_text())
+    assert smap["overrides"]["opengrep"] == smap["overrides"]["semgrep"]
+
+
+def test_duplicate_results_are_collapsed(tmp_path):
+    """osv-scanner emite cada resultado dos veces."""
+    res = {"ruleId": "CVE-2020-1747", "level": "warning",
+           "message": {"text": "pyyaml@5.3 is vulnerable"},
+           "locations": [{"physicalLocation": {
+               "artifactLocation": {"uri": "requirements.txt"},
+               "region": {"startLine": 1}}}]}
+    other = dict(res, message={"text": "otro-paquete@1 is vulnerable"})
+    doc = {"runs": [{"tool": {"driver": {"name": "osv-scanner"}},
+                     "results": [res, dict(res), other]}]}
+    path = tmp_path / "osv.sarif"
+    path.write_text(json.dumps(doc))
+    assert len(gate.parse_sarif(path, {})) == 2
