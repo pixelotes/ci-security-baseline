@@ -48,4 +48,4 @@ rules:
     metadata:
       security-severity: '5.9'
       category: supply-chain
-    pattern-regex: 'uses:\s+(?!actions/|pixelotes/|\./)[\w.-]+/[\w.-]+@v?\d[\w.-]*\s*$'
+    pattern-regex: 'uses:\s+(?!pixelotes/|\./)[\w.-]+/[\w.-]+@v?\d[\w.-]*\s*$'

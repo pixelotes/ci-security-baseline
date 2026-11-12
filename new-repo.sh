@@ -7,7 +7,7 @@
 #   .github/workflows/ci.yml   (llamador de ~15 líneas)
 #   .security-baseline.yml     (umbral, fecha de corte y excepciones)
 #
-# La lógica del pipeline NO se copia: vive en pixelotes/composite-actions y se
+# La lógica del pipeline NO se copia: vive en pixelotes/ci-security-baseline y se
 # referencia por tag. Por eso una mejora del baseline llega a todos los repos
 # moviendo el tag, sin abrir un PR por repositorio.
 #
@@ -40,7 +40,7 @@ die()  { printf '%s✗ %s%s\n' "$RD" "$*" "$R" >&2; exit 1; }
 # La org no viene cableada: se toma de baseline.conf, del entorno, o de gh.
 [ -f "$(dirname "$0")/baseline.conf" ] && . "$(dirname "$0")/baseline.conf"
 BASELINE_ORG="${BASELINE_ORG:-pixelotes}"
-BASELINE_REPO="${BASELINE_REPO:-composite-actions}"
+BASELINE_REPO="${BASELINE_REPO:-ci-security-baseline}"
 BASELINE_REF="${BASELINE_REF:-v1}"
 DTRACK_URL_DEFAULT="${DTRACK_URL:-https://dependency-track.example.internal}"
 REGISTRY_DEFAULT="${ACR_REGISTRY:-myorg.azurecr.io}"
@@ -348,7 +348,7 @@ CI_INPUTS="${CI_INPUTS}      severity-gate: '${SEVERITY}'
       run-iac: true"
 
 emit "$TARGET/.github/workflows/ci.yml" <<CIEOF
-# Generado por security-baseline/new-repo.sh
+# Generado por ci-security-baseline/new-repo.sh
 #
 # Este fichero no debe crecer. Todo lo variable va en los inputs de abajo o en
 # .security-baseline.yml. Si un cambio del baseline obliga a tocar este
@@ -397,7 +397,7 @@ POLEOF
 
 if [ "$WANT_CD" = true ]; then
   emit "$TARGET/.github/workflows/cd.yml" <<CDEOF
-# Generado por security-baseline/new-repo.sh
+# Generado por ci-security-baseline/new-repo.sh
 name: CD
 
 on:

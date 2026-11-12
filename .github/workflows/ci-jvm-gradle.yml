@@ -28,7 +28,7 @@ jobs:
         with:
           java-version: ${{ inputs.java-version }}
           distribution: temurin
-      - uses: pixelotes/composite-actions/actions/setup-cache@v1
+      - uses: pixelotes/ci-security-baseline/actions/setup-cache@v1
         with: { stack: jvm-gradle }
       - name: Compilar y pasar tests
         run: |
@@ -51,7 +51,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with: { java-version: '${{ inputs.java-version }}', distribution: temurin }
-      - uses: pixelotes/composite-actions/actions/lint-jvm@v1
+      - uses: pixelotes/ci-security-baseline/actions/lint-jvm@v1
         with: { build-tool: gradle }
 
   sast:
@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: pixelotes/composite-actions/actions/scan-semgrep@v1
+      - uses: pixelotes/ci-security-baseline/actions/scan-semgrep@v1
         with: { config: 'p/ci p/java p/secrets' }
 
   secrets:
@@ -68,14 +68,14 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 0 }
-      - uses: pixelotes/composite-actions/actions/scan-gitleaks@v1
+      - uses: pixelotes/ci-security-baseline/actions/scan-gitleaks@v1
 
   sca:
     name: trivy fs
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: pixelotes/composite-actions/actions/scan-trivy-fs@v1
+      - uses: pixelotes/ci-security-baseline/actions/scan-trivy-fs@v1
 
   container:
     name: dockerfile + imagen
@@ -95,7 +95,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 0 }   # el gate necesita historial para git blame
-      - uses: pixelotes/composite-actions/actions/gate@v1
+      - uses: pixelotes/ci-security-baseline/actions/gate@v1
         with:
           severity: ${{ inputs.severity-gate }}
           cutoff: ${{ inputs.cutoff-date }}

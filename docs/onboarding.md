@@ -60,7 +60,7 @@ El plan Team no incluye push protection en repos privados. Este hook es la
 1. **Arréglalo.** Es lo correcto en la mayoría de los casos.
 2. **Si es un falso positivo o no es explotable**, declara una excepción en
    `.security-baseline.yml`. Ver [exceptions.md](exceptions.md).
-3. **Si crees que la regla está mal**, abre un issue en `security-baseline`:
+3. **Si crees que la regla está mal**, abre un issue en `ci-security-baseline`:
    arreglar la regla ahí beneficia a todos los repos. Ver
    [runbook-falsos-positivos.md](runbook-falsos-positivos.md).
 

@@ -18,6 +18,8 @@ description = "Falsos positivos corporativos"
 paths = [
   '''(.*?)(test|tests|spec|fixtures|__mocks__)(/|\\).*''',
   '''(.*?)\.(md|adoc|svg|lock)$''',
+  # demo repo with planted findings, on purpose
+  '''(^|/)examples/.*''',
   '''(.*?)package-lock\.json$''',
   '''(.*?)yarn\.lock$''',
 ]

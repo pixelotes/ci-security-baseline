@@ -19,14 +19,14 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: pixelotes/composite-actions/actions/lint-scripts@v1
+      - uses: pixelotes/ci-security-baseline/actions/lint-scripts@v1
 
   secrets:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 0 }
-      - uses: pixelotes/composite-actions/actions/scan-gitleaks@v1
+      - uses: pixelotes/ci-security-baseline/actions/scan-gitleaks@v1
 
   gate:
     if: always() && inputs.standalone
@@ -35,7 +35,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 0 }
-      - uses: pixelotes/composite-actions/actions/gate@v1
+      - uses: pixelotes/ci-security-baseline/actions/gate@v1
         with:
           severity: ${{ inputs.severity-gate }}
           cutoff: ${{ inputs.cutoff-date }}

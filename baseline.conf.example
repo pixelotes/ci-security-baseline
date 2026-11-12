@@ -2,7 +2,7 @@
 # new-repo.sh lo carga para rellenar los valores por defecto de los prompts.
 
 BASELINE_ORG="mi-usuario"
-BASELINE_REPO="security-baseline"
+BASELINE_REPO="ci-security-baseline"
 BASELINE_REF="v1"
 
 # Publicación (déjalos vacíos si no usas CD)

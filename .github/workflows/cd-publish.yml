@@ -39,7 +39,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Login en Azure (OIDC) y lectura de Key Vault
-        uses: pixelotes/composite-actions/actions/azure-login@v1
+        uses: pixelotes/ci-security-baseline/actions/azure-login@v1
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -63,13 +63,13 @@ jobs:
 
       - name: SBOM (CycloneDX)
         id: sbom
-        uses: pixelotes/composite-actions/actions/sbom-syft@v1
+        uses: pixelotes/ci-security-baseline/actions/sbom-syft@v1
         with:
           source: ${{ inputs.stack == 'container' && format('{0}/{1}:{2}', inputs.registry, inputs.artifact-name, inputs.version) || '.' }}
           name: ${{ inputs.artifact-name }}
 
       - name: Dependency-Track — inventario y gate de política
-        uses: pixelotes/composite-actions/actions/dtrack-upload@v1
+        uses: pixelotes/ci-security-baseline/actions/dtrack-upload@v1
         with:
           sbom: ${{ steps.sbom.outputs.path }}
           project-name: ${{ github.event.repository.name }}
@@ -94,7 +94,7 @@ jobs:
 
       - name: Firmar
         if: inputs.stack == 'container'
-        uses: pixelotes/composite-actions/actions/sign-artifact@v1
+        uses: pixelotes/ci-security-baseline/actions/sign-artifact@v1
         with:
           target: ${{ inputs.registry }}/${{ inputs.artifact-name }}:${{ inputs.version }}
           method: ${{ inputs.sign-method }}

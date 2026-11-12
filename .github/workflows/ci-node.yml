@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - id: d
-        uses: pixelotes/composite-actions/actions/detect-stack@v1
+        uses: pixelotes/ci-security-baseline/actions/detect-stack@v1
 
   build:
     name: build + tests
@@ -51,14 +51,14 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with: { node-version: '${{ inputs.node-version }}' }
-      - uses: pixelotes/composite-actions/actions/lint-node@v1
+      - uses: pixelotes/ci-security-baseline/actions/lint-node@v1
         with: { package-manager: '${{ needs.detect.outputs.pm }}' }
 
   sast:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: pixelotes/composite-actions/actions/scan-semgrep@v1
+      - uses: pixelotes/ci-security-baseline/actions/scan-semgrep@v1
         with: { config: 'p/ci p/javascript p/typescript p/secrets' }
 
   secrets:
@@ -66,13 +66,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 0 }
-      - uses: pixelotes/composite-actions/actions/scan-gitleaks@v1
+      - uses: pixelotes/ci-security-baseline/actions/scan-gitleaks@v1
 
   sca:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: pixelotes/composite-actions/actions/scan-trivy-fs@v1
+      - uses: pixelotes/ci-security-baseline/actions/scan-trivy-fs@v1
 
   gate:
     needs: [build, lint, sast, secrets, sca]
@@ -81,7 +81,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 0 }
-      - uses: pixelotes/composite-actions/actions/gate@v1
+      - uses: pixelotes/ci-security-baseline/actions/gate@v1
         with:
           severity: ${{ inputs.severity-gate }}
           cutoff: ${{ inputs.cutoff-date }}

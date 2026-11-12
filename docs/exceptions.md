@@ -54,6 +54,6 @@ scope: '**'                               # equivale a no ponerlo
 
 ## Revisión
 
-`CODEOWNERS` pone a `@pixelotes/security` como revisor obligatorio de
+`CODEOWNERS` pone a `@pixelotes` como revisor obligatorio de
 `.security-baseline.yml`. Una excepción sin revisar es la forma más silenciosa
 de desactivar el gate.

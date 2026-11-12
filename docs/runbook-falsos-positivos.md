@@ -10,7 +10,7 @@ es que **cada hallazgo que bloquea merezca la interrupción**.
 ├─ Sí  → arreglar
 └─ No
    ├─ ¿Fallaría igual en otros repos?
-   │  ├─ Sí → arreglar la REGLA en security-baseline (beneficia a todos)
+   │  ├─ Sí → arreglar la REGLA en ci-security-baseline (beneficia a todos)
    │  └─ No → excepción local con scope, reason, owner y expires
    └─ ¿Es ruido sistemático de la herramienta?
       └─ ajustar policy/severity-map.yml o el allowlist de policy/
@@ -43,9 +43,9 @@ Cada ola de despliegue tiene criterio de salida. Vigila:
 
 ## Escalado
 
-1. Issue en `security-baseline` con la etiqueta `false-positive`, adjuntando el
+1. Issue en `ci-security-baseline` con la etiqueta `false-positive`, adjuntando el
    SARIF del job.
 2. Si bloquea una entrega, excepción local con `expires` corto (30 días) y el
    issue enlazado en `reason`.
-3. `@pixelotes/security` decide si la regla se ajusta, se reclasifica o se
+3. `@pixelotes` decide si la regla se ajusta, se reclasifica o se
    mantiene.
