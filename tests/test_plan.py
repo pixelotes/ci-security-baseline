@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 PLAN = Path(__file__).resolve().parent.parent / "actions" / "plan-stages" / "plan.py"
-ALL = ",build,lint,sast,secret-scan,sca,container-scan,iac-scan,"
+ALL = ",build,lint,sast,secret-scan,sca,container-scan,iac-scan,quality,"
 
 
 def run_plan(tmp_path, policy=None):

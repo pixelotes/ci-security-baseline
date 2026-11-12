@@ -385,7 +385,7 @@ version: 1
 
 # Etapas a ejecutar (opcional). Sin esta clave corren todas.
 # Nombres validos: build, lint, sast, secret-scan, sca, container-scan,
-# iac-scan, all.
+# iac-scan, quality, all.
 # stages:
 #   - lint
 #   - secret-scan

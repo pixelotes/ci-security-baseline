@@ -111,6 +111,7 @@ gate:
 | `sca` | OSV-Scanner (plus govulncheck for Go) |
 | `container-scan` | image build and Trivy image scan |
 | `iac-scan` | Checkov and Trivy config |
+| `quality` | complexity and duplication report as a PR comment (informational) |
 
 - `all` is accepted as a shortcut for every stage.
 - Without a `stages:` key, every stage runs.
@@ -128,19 +129,19 @@ gate:
 Each row is a reusable workflow; each column is a CI step; each cell lists the
 tools that run in that step. `–` means the step does not apply to that module.
 
-| Module (`ci-*.yml`) | Build & test | Lint & format | SAST | Secrets (PR diff) | Dependencies / SCA | Image & IaC scan |
-|---|---|---|---|---|---|---|
-| **Java · Maven** (`jvm-maven`) | `mvn verify` · JaCoCo report | Checkstyle · PMD · Spotless | Opengrep | Gitleaks | OSV-Scanner | via `container` / `iac` |
-| **Kotlin · Gradle** (`jvm-gradle`) | `gradle build` · JaCoCo report | detekt · ktlint | Opengrep | Gitleaks | OSV-Scanner | via `container` / `iac` |
-| **Node / TypeScript** (`node`) | `npm ci` · `npm test` | ESLint · `tsc --noEmit` · format check | Opengrep | Gitleaks | OSV-Scanner | via `container` |
-| **Python** (`python`) | `pip install` · pytest | Ruff · mypy | Opengrep | Gitleaks | OSV-Scanner | via `container` |
-| **Go** (`go`) | `go build` · `go test -race` | golangci-lint | Opengrep | Gitleaks | OSV-Scanner · govulncheck | – |
-| **Container** (`container`) | `docker buildx` (no push) | hadolint | – | – | – | Trivy image (vuln · secret · misconfig) |
-| **IaC** (`iac`) | – | terraform fmt/validate · tflint · ansible-lint · helm lint · kubeconform | Checkov | – | – | Trivy config (misconfig · secret) |
-| **Scripts** (`scripts`) | – | ShellCheck · PSScriptAnalyzer | – | Gitleaks | – | – |
+| Module (`ci-*.yml`) | Build & test | Lint & format | SAST | Secrets (PR diff) | Dependencies / SCA | Quality (informational) | Image & IaC scan |
+|---|---|---|---|---|---|---|---|
+| **Java · Maven** (`jvm-maven`) | `mvn verify` · JaCoCo report | Checkstyle · PMD · Spotless | Opengrep | Gitleaks | OSV-Scanner | lizard · jscpd | via `container` / `iac` |
+| **Kotlin · Gradle** (`jvm-gradle`) | `gradle build` · JaCoCo report | detekt · ktlint | Opengrep | Gitleaks | OSV-Scanner | lizard · jscpd | via `container` / `iac` |
+| **Node / TypeScript** (`node`) | `npm ci` · `npm test` | ESLint · `tsc --noEmit` · format check | Opengrep | Gitleaks | OSV-Scanner | lizard · jscpd | via `container` |
+| **Python** (`python`) | `pip install` · pytest | Ruff · mypy | Opengrep | Gitleaks | OSV-Scanner | lizard · jscpd | via `container` |
+| **Go** (`go`) | `go build` · `go test -race` | golangci-lint | Opengrep | Gitleaks | OSV-Scanner · govulncheck | lizard · jscpd | – |
+| **Container** (`container`) | `docker buildx` (no push) | hadolint | – | – | – | – | Trivy image (vuln · secret · misconfig) |
+| **IaC** (`iac`) | – | terraform fmt/validate · tflint · ansible-lint · helm lint · kubeconform | Checkov | – | – | – | Trivy config (misconfig · secret) |
+| **Scripts** (`scripts`) | – | ShellCheck · PSScriptAnalyzer | – | Gitleaks | – | – | – |
 
-Notes on the tool choices, picked for being light and fast (single binaries,
-pinned by checksum, nothing to `pip install`):
+Notes on the tool choices, picked for being light and fast (mostly single
+binaries pinned by checksum):
 
 - **Opengrep** replaces Semgrep: same rule format and same results on the
   rulesets we ran (identical finding counts), a ~45 MB binary instead of a
@@ -155,6 +156,14 @@ pinned by checksum, nothing to `pip install`):
 - **govulncheck** (Go only) reports whether your code actually *calls* the
   vulnerable function: reachable findings come out as high, unreachable ones as
   low.
+- **lizard and jscpd** (MIT) give the code-smell view you would get from
+  SonarQube without running a server: functions above a cyclomatic-complexity
+  threshold and duplicated blocks, posted as one PR comment that is updated on
+  every push. It is informational: it never fails and the gate ignores it.
+  Tests, vendored and generated code are excluded by default (`exclude` input).
+  Ruff and golangci-lint also enable their complexity and simplification rules
+  (`C90`, `SIM`, `gocyclo`, `gocognit`, `dupl`, `gocritic`, `revive`), which
+  show up as non-blocking lint warnings.
 - **Trivy** stays where nothing else covers it: IaC misconfiguration, image
   scanning and the nightly full scan (including licenses).
 
@@ -203,7 +212,7 @@ not part of it.
 |---|---|
 | Opengrep | LGPL-2.1 |
 | OSV-Scanner · govulncheck · Trivy · Checkov · Syft · cosign · Notation · Dependency-Track | Apache-2.0 / BSD-3 |
-| Gitleaks · PSScriptAnalyzer | MIT |
+| Gitleaks · PSScriptAnalyzer · lizard · jscpd | MIT |
 | TruffleHog | AGPL-3.0 |
 | hadolint · ShellCheck · ansible-lint · golangci-lint | GPL-3.0 |
 | tflint | MPL-2.0 |

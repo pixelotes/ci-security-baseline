@@ -9,6 +9,7 @@ runs:
       run: pip install --quiet ruff mypy
     - shell: bash
       run: |
-        ruff check --output-format=github . || echo "::warning::ruff con hallazgos"
+        # C90/SIM/PLR09xx: complejidad, simplificaciones y funciones demasiado grandes (smells)
+        ruff check --extend-select C90,SIM,PLR0911,PLR0912,PLR0913,PLR0915 --output-format=github . || echo "::warning::ruff con hallazgos"
         ruff format --check . || echo "::warning::formato pendiente"
         mypy --ignore-missing-imports . || echo "::warning::mypy con hallazgos"

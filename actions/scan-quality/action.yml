@@ -1,0 +1,54 @@
+name: 'Code quality (smells, informational)'
+description: >
+  Complexity (lizard) and duplication (jscpd), summarised in a PR comment the
+  way a SonarQube dashboard would. Informational: it never fails and the gate
+  does not look at it. Both tools are open source (MIT) and run without a
+  server.
+inputs:
+  ccn-threshold:
+    description: 'Cyclomatic complexity above which a function is listed'
+    default: '15'
+  exclude:
+    description: 'Space-separated globs to leave out of both analyses'
+    default: '**/node_modules/** **/vendor/** **/dist/** **/build/** **/target/** **/.git/** **/*.min.js **/generated/** **/*_test.go **/*.test.* **/*.spec.* **/test/** **/tests/**'
+  comment-pr:
+    description: 'Post or update the PR comment'
+    default: 'true'
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      with:
+        python-version: '3.12'
+    - name: Run lizard and jscpd (versions pinned)
+      shell: bash
+      env:
+        EXCLUDE: ${{ inputs.exclude }}
+        CCN: ${{ inputs.ccn-threshold }}
+      run: |
+        set -uo pipefail
+        mkdir -p reports
+        pip install --quiet lizard==1.26.0
+        LIZ=(); JSCPD=""
+        for g in $EXCLUDE; do
+          LIZ+=(-x "${g//\*\*/\*}")
+          JSCPD="${JSCPD:+$JSCPD,}$g"
+        done
+        lizard --csv -C "$CCN" "${LIZ[@]}" . > reports/lizard.csv || true
+        npx --yes jscpd@5.4.3 --silent --reporters json --output reports/jscpd \
+          --ignore "$JSCPD" . || true
+    - name: Build the report
+      shell: bash
+      env:
+        CCN: ${{ inputs.ccn-threshold }}
+      run: |
+        python "${{ github.action_path }}/quality.py" --ccn "$CCN"
+        cat reports/quality-summary.md >> "$GITHUB_STEP_SUMMARY"
+    - name: Comment on the PR
+      if: inputs.comment-pr == 'true' && github.event_name == 'pull_request'
+      uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
+      # Fork PRs get a read-only token and cannot comment: that is not a failure.
+      continue-on-error: true
+      with:
+        header: security-baseline-quality
+        path: reports/quality-summary.md

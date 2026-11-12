@@ -35,6 +35,7 @@ STAGES = {
     "sca":            "OSV-Scanner (plus govulncheck for Go)",
     "container-scan": "image build and Trivy image scan",
     "iac-scan":       "Checkov and Trivy config",
+    "quality":        "complexity and duplication report (informational)",
 }
 DEFAULT = list(STAGES)
 

@@ -108,9 +108,18 @@ jobs:
     if: inputs.run-iac
     uses: ./.github/workflows/ci-iac.yml
 
+  quality:
+    needs: plan
+    if: contains(needs.plan.outputs.stages, ',quality,')
+    runs-on: ubuntu-latest
+    continue-on-error: true   # informational: it never fails the run
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pixelotes/ci-security-baseline/actions/scan-quality@v1
+
   gate:
     name: gate
-    needs: [plan, build, lint, sast, secrets, sca]
+    needs: [plan, build, lint, sast, secrets, sca, quality]
     if: always()
     runs-on: ubuntu-latest
     steps:
