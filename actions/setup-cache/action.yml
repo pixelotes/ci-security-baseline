@@ -8,13 +8,13 @@ runs:
   using: composite
   steps:
     - if: inputs.stack == 'jvm-maven'
-      uses: actions/cache@v4
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ~/.m2/repository
         key: m2-${{ hashFiles('**/pom.xml') }}
         restore-keys: m2-
     - if: inputs.stack == 'jvm-gradle'
-      uses: actions/cache@v4
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: |
           ~/.gradle/caches
@@ -22,19 +22,19 @@ runs:
         key: gradle-${{ hashFiles('**/*.gradle*') }}
         restore-keys: gradle-
     - if: inputs.stack == 'node'
-      uses: actions/cache@v4
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ~/.npm
         key: node-${{ hashFiles('**/package-lock.json', '**/yarn.lock', '**/pnpm-lock.yaml') }}
         restore-keys: node-
     - if: inputs.stack == 'python'
-      uses: actions/cache@v4
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ~/.cache/pip
         key: pip-${{ hashFiles('**/requirements*.txt', '**/pyproject.toml') }}
         restore-keys: pip-
     - if: inputs.stack == 'go'
-      uses: actions/cache@v4
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: |
           ~/.cache/go-build

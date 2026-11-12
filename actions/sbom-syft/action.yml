@@ -16,7 +16,7 @@ runs:
           | sh -s -- -b /usr/local/bin
         syft "${{ inputs.source }}" \
           -o cyclonedx-json="reports/${{ inputs.name }}.cdx.json"
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: sbom-${{ inputs.name }}
         path: reports/${{ inputs.name }}.cdx.json

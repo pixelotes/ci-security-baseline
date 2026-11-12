@@ -20,7 +20,7 @@ jobs:
     outputs:
       pm: ${{ steps.d.outputs.node-pm }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - id: d
         uses: pixelotes/composite-actions/actions/detect-stack@v1
 
@@ -29,8 +29,8 @@ jobs:
     needs: detect
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ inputs.node-version }}
           cache: ${{ needs.detect.outputs.pm }}
@@ -48,8 +48,8 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with: { node-version: '${{ inputs.node-version }}' }
       - uses: pixelotes/composite-actions/actions/lint-node@v1
         with: { package-manager: '${{ needs.detect.outputs.pm }}' }
@@ -57,21 +57,21 @@ jobs:
   sast:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pixelotes/composite-actions/actions/scan-semgrep@v1
         with: { config: 'p/ci p/javascript p/typescript p/secrets' }
 
   secrets:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 0 }
       - uses: pixelotes/composite-actions/actions/scan-gitleaks@v1
 
   sca:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pixelotes/composite-actions/actions/scan-trivy-fs@v1
 
   gate:
@@ -79,7 +79,7 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 0 }
       - uses: pixelotes/composite-actions/actions/gate@v1
         with:

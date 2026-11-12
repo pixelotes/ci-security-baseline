@@ -24,14 +24,14 @@ jobs:
     name: trufflehog (historial, verificados)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 0 }
       - uses: pixelotes/composite-actions/actions/scan-trufflehog@v1
 
   sca-full:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pixelotes/composite-actions/actions/scan-trivy-fs@v1
         with: { scanners: 'vuln,secret,license,misconfig' }
 
@@ -51,7 +51,7 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 0 }
       - id: gate
         continue-on-error: true
@@ -61,7 +61,7 @@ jobs:
           comment-pr: 'false'
       - name: Abrir incidente si hay bloqueantes
         if: steps.gate.outputs.passed == 'false'
-        uses: peter-evans/create-issue-from-file@v5
+        uses: peter-evans/create-issue-from-file@fca9117c27cdc29c6c4db3b86c48e4115a786710 # v6.0.0
         with:
           title: "Security baseline · hallazgos críticos en el escaneo nocturno"
           content-filepath: reports/gate-summary.md

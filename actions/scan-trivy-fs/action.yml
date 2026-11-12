@@ -6,12 +6,12 @@ runs:
   using: composite
   steps:
     - name: Caché de la BD de vulnerabilidades
-      uses: actions/cache@v4
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ~/.cache/trivy
         key: trivy-db-${{ github.run_id }}
         restore-keys: trivy-db-
-    - uses: aquasecurity/trivy-action@0.28.0
+    - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
       with:
         scan-type: fs
         scan-ref: .
@@ -20,6 +20,6 @@ runs:
         output: reports/trivy-fs.sarif
         exit-code: '0'   # decide el gate
         cache-dir: ~/.cache/trivy
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       if: always()
       with: { name: sarif-trivy-fs, path: reports/trivy-fs.sarif, if-no-files-found: warn }
