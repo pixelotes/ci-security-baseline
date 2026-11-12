@@ -1,147 +1,183 @@
-# security-baseline
+# ci-security-baseline
 
-Pipeline modular de seguridad para GitHub Actions. Se ensambla según el stack
-de cada repositorio y aporta un gate bloqueante común a toda la organización.
+A modular security pipeline for GitHub Actions. It is assembled per repository
+according to its stack and gives the whole organization one common, blocking
+gate.
 
-> **Diseñado para GitHub sin Advanced Security.** En los planes Team no hay
-> Code Scanning ni upload de SARIF en repositorios privados, así que el
-> agregador de hallazgos es propio y vive en `actions/gate`. Si tienes GHAS,
-> este baseline sigue valiendo: puedes sustituir el gate por el Security tab.
+> **Designed for GitHub without Advanced Security.** On Team plans there is no
+> Code Scanning and no SARIF upload for private repositories, so the findings
+> aggregator is our own and lives in `actions/gate`. If you do have GHAS this
+> baseline is still useful: you can replace the gate with the Security tab.
 
-## La idea en una frase
+## The idea in one sentence
 
-El repositorio de producto solo contiene una referencia de ~15 líneas. La
-lógica vive aquí y se versiona por tag, así que **una mejora del baseline llega
-a todos los repos moviendo el tag `v1`, sin abrir un PR por repositorio**.
+A product repository only contains a ~15-line reference. The logic lives here
+and is versioned by tag, so **an improvement to the baseline reaches every
+repository by moving the `v1` tag, without opening a PR per repository**.
 
 ```
-repos de producto   .github/workflows/ci.yml    ← generado una vez (15 líneas)
-                    .security-baseline.yml      ← umbral, corte y excepciones
+product repos        .github/workflows/ci.yml   ← generated once (15 lines)
+                     .security-baseline.yml     ← threshold, cutoff, exceptions
         ↓ uses @v1
-security-baseline   .github/workflows/ci-*.yml  ← reusable workflows por stack
+ci-security-baseline .github/workflows/ci-*.yml ← reusable workflows per stack
         ↓ uses
-                    actions/*                   ← composite actions atómicas
+                     actions/*                  ← atomic composite actions
 ```
 
-## Instalación
+## Installation
+
+To use it as is, reference it from your repositories:
+
+```yaml
+jobs:
+  baseline:
+    uses: pixelotes/ci-security-baseline/.github/workflows/ci-python.yml@v1
+```
+
+or let `new-repo.sh` generate the caller for you (see [Usage](#usage)).
+
+To run your own copy, fork it and repoint the references:
 
 ```bash
-git clone https://github.com/TU-ORG/TU-REPO
-cd TU-REPO
-./bin/set-org.sh TU-ORG TU-REPO          # estampa org y repo en los uses:
-cp baseline.conf.example baseline.conf   # opcional: destinos de publicación
+git clone https://github.com/YOUR-ORG/YOUR-REPO
+cd YOUR-REPO
+./bin/set-org.sh YOUR-ORG YOUR-REPO      # rewrites the owner/repo in every uses:
+cp baseline.conf.example baseline.conf   # optional: publishing destinations
 ```
 
-`set-org.sh` es necesario porque GitHub **no admite expresiones en `uses:`**:
-la organización y el nombre del repositorio tienen que aparecer literales en
-cada referencia. Por eso el repo se publica con los marcadores `pixelotes` y
-`composite-actions` sin resolver.
+`set-org.sh` is needed because GitHub **does not allow expressions in
+`uses:`**: the owner and the repository name have to appear literally in every
+reference. The repository ships stamped as `pixelotes/ci-security-baseline`;
+the script rewrites whatever is currently stamped, so it can be run again after
+a rename. Then publish the `v1` tag in your copy (the references point to it).
 
-## Uso
+## Usage
 
 ```bash
-./new-repo.sh                      # repo nuevo, modo interactivo
-./new-repo.sh --adopt ../mi-repo   # añade el baseline a un repo existente
-./new-repo.sh --dry-run            # enseña lo que haría, sin escribir
+./new-repo.sh                      # new repo, interactive mode
+./new-repo.sh --adopt ../my-repo   # add the baseline to an existing repo
+./new-repo.sh --dry-run            # show what it would do, write nothing
 ```
 
-El script pregunta stack, versión, umbral del gate, fecha de corte y destino de
-publicación, y escribe **solo dos ficheros** en el repo destino. No copia
-lógica: si un cambio del baseline obliga a tocar el fichero generado, es el
-baseline el que está mal diseñado.
+The script asks for the stack, version, gate threshold, cutoff date and
+publishing target, and writes **only two files** into the target repository. It
+copies no logic: if a baseline change forces you to touch the generated file,
+the baseline is badly designed.
 
-## Probarlo sin tocar nada real
+## Try it without touching anything real
 
 ```bash
 pip install pyyaml pytest
-python -m pytest tests/ -q        # 15 tests del gate
+python -m pytest tests/ -q        # 15 gate tests
 
-./examples/probar-gate.sh          # el gate contra SARIF de ejemplo
+./examples/probar-gate.sh          # the gate against sample SARIF files
 ./new-repo.sh --adopt examples/demo-python --dry-run
 ```
 
-`examples/demo-python` es un repo mínimo con hallazgos plantados a propósito:
-sirve para ver el gate bloquear de verdad antes de apuntarlo a nada tuyo.
+`examples/demo-python` is a minimal repo with deliberately planted findings:
+use it to watch the gate actually block before pointing it at anything of
+yours.
 
-## Contrato del pipeline
+## Pipeline contract
 
 | | |
 |---|---|
-| Los escáneres | emiten SARIF y **nunca fallan** (`continue-on-error: true`) |
-| El `gate` | agrega, normaliza severidad, aplica excepciones y **decide** |
-| Required check | solo `gate`. Cambiar la política no toca ningún escáner |
-| Presupuesto de CI | < 10 min. Lo pesado va a `nightly-deep-scan.yml` |
+| Scanners | emit SARIF and **never fail** (`continue-on-error: true`) |
+| The `gate` | aggregates, normalizes severity, applies exceptions and **decides** |
+| Required check | `gate` only. Changing the policy never touches a scanner |
+| CI budget | < 10 min. Anything heavy goes to `nightly-deep-scan.yml` |
 
-## Módulos
+## Modules and tools
 
-| Workflow | Herramientas |
-|---|---|
-| `ci-jvm-maven.yml`  | checkstyle · pmd · spotless · semgrep · gitleaks · trivy |
-| `ci-jvm-gradle.yml` | detekt · ktlint · semgrep · gitleaks · trivy |
-| `ci-node.yml`       | eslint · tsc · semgrep · gitleaks · trivy |
-| `ci-python.yml`     | ruff · mypy · semgrep · gitleaks · trivy |
-| `ci-go.yml`         | golangci-lint · semgrep · gitleaks · trivy |
-| `ci-container.yml`  | hadolint · trivy image |
-| `ci-iac.yml`        | tflint · ansible-lint · helm lint · checkov · trivy |
-| `ci-scripts.yml`    | shellcheck · PSScriptAnalyzer |
-| `cd-publish.yml`    | syft · Dependency-Track · cosign/notation · registry |
-| `nightly-deep-scan.yml` | trufflehog verificado · re-scan del registry |
+Each row is a reusable workflow; each column is a CI step; each cell lists the
+tools that run in that step. `–` means the step does not apply to that module.
 
-`container`, `iac` y `scripts` **no** son alternativas a los módulos de
-lenguaje: son aditivos. Un repo Java con Dockerfile y charts llama a los tres y
-el `gate` corre una sola vez al final.
+| Module (`ci-*.yml`) | Build & test | Lint & format | SAST | Secrets (PR diff) | Dependencies / SCA | Image & IaC scan |
+|---|---|---|---|---|---|---|
+| **Java · Maven** (`jvm-maven`) | `mvn verify` · JaCoCo report | Checkstyle · PMD · Spotless | Semgrep | Gitleaks | Trivy fs | via `container` / `iac` |
+| **Kotlin · Gradle** (`jvm-gradle`) | `gradle build` · JaCoCo report | detekt · ktlint | Semgrep | Gitleaks | Trivy fs | via `container` / `iac` |
+| **Node / TypeScript** (`node`) | `npm ci` · `npm test` | ESLint · `tsc --noEmit` · format check | Semgrep | Gitleaks | Trivy fs | via `container` |
+| **Python** (`python`) | `pip install` · pytest | Ruff · mypy | Semgrep | Gitleaks | Trivy fs | via `container` |
+| **Go** (`go`) | `go build` · `go test -race` | golangci-lint | Semgrep | Gitleaks | Trivy fs | – |
+| **Container** (`container`) | `docker buildx` (no push) | hadolint | – | – | – | Trivy image (vuln · secret · misconfig) |
+| **IaC** (`iac`) | – | terraform fmt/validate · tflint · ansible-lint · helm lint · kubeconform | Checkov | – | – | Trivy config (misconfig · secret) |
+| **Scripts** (`scripts`) | – | ShellCheck · PSScriptAnalyzer | – | Gitleaks | – | – |
 
-## Decisiones que conviene conocer antes de tocar nada
+Every module ends in the same `gate`, which runs once. `container`, `iac` and
+`scripts` are **additive**, not alternatives to the language modules: a Java
+repo with a Dockerfile and Helm charts calls all three, and the gate runs a
+single time at the end.
 
-- **El gate necesita una fecha de corte.** Aplicarlo de golpe sobre un parque
-  con años de deuda bloquea todos los PRs la primera semana, y el resultado
-  previsible es que alguien desactive el required check. El corte degrada a
-  aviso lo introducido antes de una fecha.
-- **Las excepciones caducan siempre.** Sin `expires`, el gate falla. Sin esa
-  regla, en seis meses el fichero es un cementerio y el gate no bloquea nada.
-- **Dos herramientas de secretos, dos momentos.** Gitleaks informa sobre el
-  diff del PR; TruffleHog `--only-verified` bloquea en la nocturna, porque un
-  secreto verificado contra el proveedor es cierto por definición.
-- **Cosign keyless, opcional.** Publica la identidad del repositorio en el log
-  público de Rekor. En repos privados con nombres sensibles, se firma con clave
-  en KMS/Key Vault o con Notation.
-- **`id-token: write` solo en CD.** Sin ese permiso no hay token OIDC posible,
-  aunque el proveedor de identidad esté mal configurado. Es la defensa en
-  profundidad que protege el almacén de secretos.
+Beyond the per-PR modules:
 
-## Por qué Dependency-Track
+| Workflow | When | Build & publish | Supply chain | Secrets | Dependencies / SCA |
+|---|---|---|---|---|---|
+| `cd-publish.yml` | release | registry push (ACR) | Syft SBOM · Dependency-Track · cosign / Notation signing | – | Dependency-Track (continuous) |
+| `nightly-deep-scan.yml` | nightly | – | re-scan of published images (Trivy image) | TruffleHog, history, `--only-verified` | Trivy fs (vuln · secret · license · misconfig) |
 
-Un feed de artefactos (Azure Artifacts, GitHub Packages) no escanea, no evalúa
-licencias y no reevalúa lo ya publicado. Un artefacto publicado en enero
-afectado por una CVE de marzo deja de generar señal.
-`actions/dtrack-upload` repone esa capacidad y aporta el histórico de SBOM que
-sirve como evidencia de auditoría. Es opcional: sin `dtrack-url`, el CD
-funciona igual pero pierde el escaneo continuo.
+## Decisions worth knowing before you touch anything
 
-## Requisitos de organización
+- **The gate needs a cutoff date.** Applying it all at once to an estate with
+  years of debt blocks every PR in the first week, and the predictable outcome
+  is that someone disables the required check. The cutoff downgrades to a
+  warning whatever was introduced before a given date.
+- **Exceptions always expire.** Without `expires`, the gate fails. Without that
+  rule, six months from now the file is a graveyard and the gate blocks
+  nothing.
+- **Two secret scanners, two moments.** Gitleaks reports on the PR diff;
+  TruffleHog `--only-verified` blocks in the nightly, because a secret verified
+  against the provider is real by definition.
+- **Keyless cosign is optional.** It publishes the repository identity to the
+  public Rekor log. For private repos with sensitive names, sign with a key in
+  KMS/Key Vault or with Notation.
+- **`id-token: write` only in CD.** Without that permission no OIDC token is
+  possible, even if the identity provider is misconfigured. It is the
+  defense in depth that protects the secret store.
+- **Third-party actions are pinned by SHA**, `actions/*` included, with the
+  release tag kept as a trailing comment so Dependabot still knows the version.
+  `./bin/pin-actions.sh` does it and `--check` verifies it.
 
-- **Actions access policy** de este repositorio abierta a la org, o ningún repo
-  privado podrá llamar a sus reusable workflows.
-- Ruleset en `main` con `gate` como required check.
-- Environments con required reviewers para producción.
-- Federated credentials acotadas por environment:
-  `repo:ORG/REPO:environment:prod`. **Nunca con comodín**: un subject amplio
-  deja que un workflow de pull request obtenga token de producción.
+## Why Dependency-Track
 
-## Configuración local que NO se versiona
+An artifact feed (Azure Artifacts, GitHub Packages) does not scan, does not
+evaluate licenses and does not re-evaluate what was already published. An
+artifact published in January and affected by a CVE from March stops producing
+signal. `actions/dtrack-upload` restores that capability and provides the SBOM
+history that serves as audit evidence. It is optional: without `dtrack-url`,
+CD works the same but loses continuous scanning.
 
-- `baseline.conf` — destinos de publicación de tu organización.
-- `policy/gitleaks.local.toml` — patrones internos (prefijos de token propios,
-  dominios de simulación de phishing). Publicarlos en un repo documentaría en
-  claro justo lo que no interesa que se encuentre.
+## Organization requirements
 
-## Desarrollo
+- If you run this from a **private** repository, its **Actions access policy**
+  must be open to the organization, or no private repo will be able to call
+  its reusable workflows. (A public repository needs nothing.)
+- A ruleset on `main` with `gate` as a required check.
+- Environments with required reviewers for production.
+- Federated credentials scoped per environment:
+  `repo:ORG/REPO:environment:prod`. **Never with a wildcard**: a broad subject
+  lets a pull-request workflow obtain a production token.
+
+## Local configuration that is NOT versioned
+
+- `baseline.conf` — your organization's publishing destinations.
+- `policy/gitleaks.local.toml` — internal patterns (own token prefixes,
+  phishing-simulation domains). Publishing them in a repo would document in the
+  clear exactly what you do not want found.
+
+## Development
 
 ```bash
-python -m pytest tests/ -q     # tests del gate
-bash -n new-repo.sh            # sintaxis del generador
-./bin/pin-actions.sh --check   # comprueba que las actions van por SHA
+python -m pytest tests/ -q     # gate tests
+bash -n new-repo.sh            # generator syntax
+./bin/pin-actions.sh --check   # verify that actions are pinned by SHA
 ```
 
-`selfcheck.yml` aplica el baseline a este mismo repositorio: si el gate no pasa
-aquí, no está listo para nadie más.
+`selfcheck.yml` applies the baseline to this very repository: if the gate does
+not pass here, it is not ready for anyone else.
+
+The scripts, the `docs/` folder and the gate's messages are currently in
+Spanish.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
