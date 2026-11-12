@@ -97,24 +97,23 @@ version: 1
 stages:
   - lint
   - secret-scan
-  - codeql
+  - sast
 gate:
   severity: high
 ```
 
-| Stage | What runs | Default |
-|---|---|---|
-| `build` | build and tests | on |
-| `lint` | linters and formatters | on |
-| `sast` | Opengrep | on |
-| `secret-scan` | Gitleaks on the PR diff | on |
-| `sca` | OSV-Scanner (plus govulncheck for Go) | on |
-| `container-scan` | image build and Trivy image scan | on |
-| `iac-scan` | Checkov and Trivy config | on |
-| `codeql` | CodeQL | **off**, opt-in |
+| Stage | What runs |
+|---|---|
+| `build` | build and tests |
+| `lint` | linters and formatters |
+| `sast` | Opengrep |
+| `secret-scan` | Gitleaks on the PR diff |
+| `sca` | OSV-Scanner (plus govulncheck for Go) |
+| `container-scan` | image build and Trivy image scan |
+| `iac-scan` | Checkov and Trivy config |
 
-- `all` is accepted as a shortcut: `stages: [all, codeql]`.
-- Without a `stages:` key, everything except `codeql` runs.
+- `all` is accepted as a shortcut for every stage.
+- Without a `stages:` key, every stage runs.
 - An unknown name **fails** the run: a typo must never silently turn a
   security stage off. When the plan fails, the `gate` fails too, so the
   required check cannot go green.
@@ -123,9 +122,6 @@ gate:
   prints the plan (enabled and skipped stages) in its job summary.
 - Narrowing `stages:` weakens the pipeline, so the file is covered by
   `CODEOWNERS`: review changes to it like you would review an exception.
-- `codeql` is free for public repositories; on private repositories it needs
-  GitHub Code Security. That is why it is opt-in and why Opengrep stays the
-  default SAST.
 
 ## Modules and tools
 
@@ -162,9 +158,6 @@ pinned by checksum, nothing to `pip install`):
 - **Trivy** stays where nothing else covers it: IaC misconfiguration, image
   scanning and the nightly full scan (including licenses).
 
-The opt-in `codeql` stage adds CodeQL to the SAST column of the Java/Kotlin,
-Node/TypeScript, Python and Go modules.
-
 Every module ends in the same `gate`, which runs once. `container`, `iac` and
 `scripts` are **additive**, not alternatives to the language modules: a Java
 repo with a Dockerfile and Helm charts calls all three, and the gate runs a
@@ -198,6 +191,36 @@ Beyond the per-PR modules:
 - **Third-party actions are pinned by SHA**, `actions/*` included, with the
   release tag kept as a trailing comment so Dependabot still knows the version.
   `./bin/pin-actions.sh` does it and `--check` verifies it.
+
+## Licensing: free to run on private repositories
+
+Everything the baseline runs is open source and free to use on private
+repositories; nothing needs GitHub Advanced Security or a paid scanner. That is
+a design constraint, which is why CodeQL (free only for public repositories) is
+not part of it.
+
+| Tool | License |
+|---|---|
+| Opengrep | LGPL-2.1 |
+| OSV-Scanner · govulncheck · Trivy · Checkov · Syft · cosign · Notation · Dependency-Track | Apache-2.0 / BSD-3 |
+| Gitleaks · PSScriptAnalyzer | MIT |
+| TruffleHog | AGPL-3.0 |
+| hadolint · ShellCheck · ansible-lint · golangci-lint | GPL-3.0 |
+| tflint | MPL-2.0 |
+
+The GPL and AGPL tools are only *run* in CI, never modified or redistributed,
+so their copyleft does not reach your code. Two caveats:
+
+- The rulesets Opengrep loads from the Semgrep registry (`p/ci`, `p/python`...)
+  are under the *Semgrep Rules License v1.0*: fine for internal use, not for
+  reselling them as a service. If that matters to you, pass your own rules
+  through the `config` input and keep `policy/semgrep/`, which is ours.
+- `terraform fmt/validate` runs the Terraform CLI (BUSL-1.1), which allows
+  internal use. Swap it for OpenTofu (MPL-2.0) if you want a fully open stack.
+
+GitHub's own free-tier limits still apply to private repositories (Actions
+minutes and artifact storage). SARIF artifacts are kept for one day to stay
+well under the storage quota.
 
 ## Why Dependency-Track
 

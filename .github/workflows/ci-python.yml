@@ -88,18 +88,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pixelotes/ci-security-baseline/actions/scan-osv@v1
 
-  codeql:
-    needs: plan
-    if: contains(needs.plan.outputs.stages, ',codeql,')
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: pixelotes/ci-security-baseline/actions/scan-codeql@v1
-        with:
-          languages: python
-
   gate:
-    needs: [plan, build, lint, sast, secrets, sca, codeql]
+    needs: [plan, build, lint, sast, secrets, sca]
     if: always()
     runs-on: ubuntu-latest
     steps:

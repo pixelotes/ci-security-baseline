@@ -383,9 +383,9 @@ emit "$TARGET/.security-baseline.yml" <<POLEOF
 # excepción vuelve a la mesa con un responsable con nombre.
 version: 1
 
-# Etapas a ejecutar (opcional). Sin esta clave corren todas salvo codeql.
+# Etapas a ejecutar (opcional). Sin esta clave corren todas.
 # Nombres validos: build, lint, sast, secret-scan, sca, container-scan,
-# iac-scan, codeql (opt-in; gratis solo en repos publicos), all.
+# iac-scan, all.
 # stages:
 #   - lint
 #   - secret-scan

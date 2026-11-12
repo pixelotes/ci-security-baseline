@@ -70,4 +70,4 @@ runs:
         path: |
           ${{ inputs.reports-dir }}/gate-summary.md
           ${{ inputs.reports-dir }}/gate-result.json
-        retention-days: 30
+        retention-days: 7

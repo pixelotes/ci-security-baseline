@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 PLAN = Path(__file__).resolve().parent.parent / "actions" / "plan-stages" / "plan.py"
-DEFAULT = ",build,lint,sast,secret-scan,sca,container-scan,iac-scan,"
+ALL = ",build,lint,sast,secret-scan,sca,container-scan,iac-scan,"
 
 
 def run_plan(tmp_path, policy=None):
@@ -29,31 +29,27 @@ def run_plan(tmp_path, policy=None):
 def test_no_config_runs_every_default_stage(tmp_path):
     proc, stages, _ = run_plan(tmp_path)
     assert proc.returncode == 0
-    assert stages == DEFAULT
+    assert stages == ALL
 
 
 def test_config_without_stages_runs_defaults(tmp_path):
     proc, stages, _ = run_plan(tmp_path, "version: 1\n")
     assert proc.returncode == 0
-    assert stages == DEFAULT
-
-
-def test_codeql_is_opt_in(tmp_path):
-    assert "codeql" not in run_plan(tmp_path, "version: 1\n")[1]
+    assert stages == ALL
 
 
 def test_selected_stages_only(tmp_path):
     proc, stages, _ = run_plan(
-        tmp_path, "stages:\n  - lint\n  - secret-scan\n  - codeql\n")
+        tmp_path, "stages:\n  - secret-scan\n  - lint\n")
     assert proc.returncode == 0
     # canonical order, not the order they were listed in
-    assert stages == ",lint,secret-scan,codeql,"
+    assert stages == ",lint,secret-scan,"
     assert "skipped stages" in proc.stdout
 
 
-def test_all_keyword_plus_codeql(tmp_path):
-    _, stages, _ = run_plan(tmp_path, "stages: [all, codeql]\n")
-    assert stages == DEFAULT + "codeql,"
+def test_all_keyword_runs_everything(tmp_path):
+    _, stages, _ = run_plan(tmp_path, "stages: [all]\n")
+    assert stages == ALL
 
 
 def test_names_are_case_insensitive(tmp_path):

@@ -8,9 +8,8 @@ workflows can test membership with contains(..., ',lint,') without matching
 substrings).
 
 Rules:
-  - no config file, or no `stages` key  -> every default stage runs
-  - `all` expands to the default stages (handy for `[all, codeql]`)
-  - `codeql` is opt-in: it only runs when it is listed explicitly
+  - no config file, or no `stages` key  -> every stage runs
+  - `all` is accepted as a shortcut for every stage
   - an unknown stage name FAILS the plan. A typo must never silently turn a
     security stage off; the gate refuses to pass when the plan failed.
 """
@@ -36,10 +35,8 @@ STAGES = {
     "sca":            "OSV-Scanner (plus govulncheck for Go)",
     "container-scan": "image build and Trivy image scan",
     "iac-scan":       "Checkov and Trivy config",
-    "codeql":         "CodeQL (opt-in; free for public repositories only)",
 }
-OPT_IN = {"codeql"}
-DEFAULT = [s for s in STAGES if s not in OPT_IN]
+DEFAULT = list(STAGES)
 
 
 def resolve(config: Path) -> tuple[list[str], list[str]]:
