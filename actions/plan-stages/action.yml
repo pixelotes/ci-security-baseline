@@ -1,0 +1,25 @@
+name: 'Plan stages'
+description: >
+  Reads the optional `stages:` list from .security-baseline.yml and outputs
+  which pipeline stages should run. An unknown stage name fails the plan.
+inputs:
+  config:
+    description: 'Path to the baseline policy file'
+    default: '.security-baseline.yml'
+outputs:
+  stages:
+    description: 'Comma-wrapped list of enabled stages, e.g. ",lint,sast,"'
+    value: ${{ steps.run.outputs.stages }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      with:
+        python-version: '3.12'
+    - shell: bash
+      run: pip install --quiet pyyaml
+    - id: run
+      shell: bash
+      env:
+        CONFIG: ${{ inputs.config }}
+      run: python "${{ github.action_path }}/plan.py" --config "$CONFIG"

@@ -24,6 +24,8 @@ while IFS= read -r line; do
   file="${line%%:*}"; rest="${line#*:}"
   ref="$(printf '%s' "$rest" | sed -E 's/.*uses:[[:space:]]+([^[:space:]]+).*/\1/')"
   repo="${ref%@*}"; tag="${ref#*@}"
+  # github/codeql-action/init -> github/codeql-action (subpath is not part of the repo)
+  slug="$(printf %s "$repo" | cut -d/ -f1-2)"
   case "$repo" in pixelotes/*|./*) continue ;; esac
   # ya fijada: 40 hex exactos (un tag como "0.28.0" no debe confundirse con un SHA)
   case "$tag" in *[!0-9a-f]*) ;; *) [ "${#tag}" -eq 40 ] && continue ;; esac
@@ -31,10 +33,10 @@ while IFS= read -r line; do
   # Se resuelve por refs/tags (no por /commits/<tag>, que falla con tags
   # numéricos) y se desreferencia el tag anotado hasta el commit.
   sha="" ; type=""
-  read -r type sha < <(gh api "repos/${repo}/git/ref/tags/${tag}" \
+  read -r type sha < <(gh api "repos/${slug}/git/ref/tags/${tag}" \
     --jq '[.object.type,.object.sha]|@tsv' 2>/dev/null || true) || true
   if [ "$type" = "tag" ] && [ -n "$sha" ]; then
-    sha="$(gh api "repos/${repo}/git/tags/${sha}" --jq .object.sha 2>/dev/null || true)"
+    sha="$(gh api "repos/${slug}/git/tags/${sha}" --jq .object.sha 2>/dev/null || true)"
   fi
   [ -n "$sha" ] || { echo "no resuelto: $ref"; continue; }
 

@@ -21,7 +21,19 @@ permissions:
   pull-requests: write
 
 jobs:
+  plan:
+    name: plan stages
+    runs-on: ubuntu-latest
+    outputs:
+      stages: ${{ steps.plan.outputs.stages }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - id: plan
+        uses: pixelotes/ci-security-baseline/actions/plan-stages@v1
+
   lint:
+    needs: plan
+    if: contains(needs.plan.outputs.stages, ',lint,')
     name: hadolint
     runs-on: ubuntu-latest
     steps:
@@ -29,6 +41,8 @@ jobs:
       - uses: pixelotes/ci-security-baseline/actions/lint-docker@v1
 
   scan:
+    needs: plan
+    if: contains(needs.plan.outputs.stages, ',container-scan,')
     name: build + trivy image
     runs-on: ubuntu-latest
     steps:
@@ -50,9 +64,14 @@ jobs:
 
   gate:
     if: always() && inputs.standalone
-    needs: [lint, scan]
+    needs: [plan, lint, scan]
     runs-on: ubuntu-latest
     steps:
+      - name: Fail if the stage plan is invalid
+        if: needs.plan.result != 'success'
+        run: |
+          echo "::error::The stage plan failed (see the 'plan stages' job): refusing to pass"
+          exit 1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 0 }
       - uses: pixelotes/ci-security-baseline/actions/gate@v1

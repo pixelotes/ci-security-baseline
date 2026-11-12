@@ -383,6 +383,13 @@ emit "$TARGET/.security-baseline.yml" <<POLEOF
 # excepción vuelve a la mesa con un responsable con nombre.
 version: 1
 
+# Etapas a ejecutar (opcional). Sin esta clave corren todas salvo codeql.
+# Nombres validos: build, lint, sast, secret-scan, sca, container-scan,
+# iac-scan, codeql (opt-in; gratis solo en repos publicos), all.
+# stages:
+#   - lint
+#   - secret-scan
+
 gate:
   severity: ${SEVERITY}
 $([ -n "$CUTOFF" ] && printf "  cutoff: '%s'\n" "$CUTOFF" || printf "  # cutoff: '2026-10-01'   # repo nuevo: sin deuda previa que tolerar\n")

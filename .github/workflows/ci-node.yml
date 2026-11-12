@@ -15,6 +15,16 @@ permissions:
   pull-requests: write
 
 jobs:
+  plan:
+    name: plan stages
+    runs-on: ubuntu-latest
+    outputs:
+      stages: ${{ steps.plan.outputs.stages }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - id: plan
+        uses: pixelotes/ci-security-baseline/actions/plan-stages@v1
+
   detect:
     runs-on: ubuntu-latest
     outputs:
@@ -25,8 +35,9 @@ jobs:
         uses: pixelotes/ci-security-baseline/actions/detect-stack@v1
 
   build:
+    if: contains(needs.plan.outputs.stages, ',build,')
     name: build + tests
-    needs: detect
+    needs: [plan, detect]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -44,7 +55,8 @@ jobs:
       - run: npm test --if-present
 
   lint:
-    needs: detect
+    if: contains(needs.plan.outputs.stages, ',lint,')
+    needs: [plan, detect]
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
@@ -55,6 +67,8 @@ jobs:
         with: { package-manager: '${{ needs.detect.outputs.pm }}' }
 
   sast:
+    needs: plan
+    if: contains(needs.plan.outputs.stages, ',sast,')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -62,6 +76,8 @@ jobs:
         with: { config: 'p/ci p/javascript p/typescript p/secrets' }
 
   secrets:
+    needs: plan
+    if: contains(needs.plan.outputs.stages, ',secret-scan,')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -69,16 +85,33 @@ jobs:
       - uses: pixelotes/ci-security-baseline/actions/scan-gitleaks@v1
 
   sca:
+    needs: plan
+    if: contains(needs.plan.outputs.stages, ',sca,')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pixelotes/ci-security-baseline/actions/scan-trivy-fs@v1
 
+  codeql:
+    needs: plan
+    if: contains(needs.plan.outputs.stages, ',codeql,')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pixelotes/ci-security-baseline/actions/scan-codeql@v1
+        with:
+          languages: javascript-typescript
+
   gate:
-    needs: [build, lint, sast, secrets, sca]
+    needs: [plan, build, lint, sast, secrets, sca, codeql]
     if: always()
     runs-on: ubuntu-latest
     steps:
+      - name: Fail if the stage plan is invalid
+        if: needs.plan.result != 'success'
+        run: |
+          echo "::error::The stage plan failed (see the 'plan stages' job): refusing to pass"
+          exit 1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 0 }
       - uses: pixelotes/ci-security-baseline/actions/gate@v1

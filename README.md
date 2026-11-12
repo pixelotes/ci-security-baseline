@@ -87,6 +87,46 @@ yours.
 | Required check | `gate` only. Changing the policy never touches a scanner |
 | CI budget | < 10 min. Anything heavy goes to `nightly-deep-scan.yml` |
 
+## Choosing which stages run
+
+By default every module runs all its stages. To run only some, list them in
+`.security-baseline.yml`; no workflow needs to change:
+
+```yaml
+version: 1
+stages:
+  - lint
+  - secret-scan
+  - codeql
+gate:
+  severity: high
+```
+
+| Stage | What runs | Default |
+|---|---|---|
+| `build` | build and tests | on |
+| `lint` | linters and formatters | on |
+| `sast` | Semgrep | on |
+| `secret-scan` | Gitleaks on the PR diff | on |
+| `sca` | Trivy filesystem scan (dependencies) | on |
+| `container-scan` | image build and Trivy image scan | on |
+| `iac-scan` | Checkov and Trivy config | on |
+| `codeql` | CodeQL | **off**, opt-in |
+
+- `all` is accepted as a shortcut: `stages: [all, codeql]`.
+- Without a `stages:` key, everything except `codeql` runs.
+- An unknown name **fails** the run: a typo must never silently turn a
+  security stage off. When the plan fails, the `gate` fails too, so the
+  required check cannot go green.
+- The `gate` always runs, whatever the selection. A stage that is switched off
+  produces no findings, so the gate only judges what you left on. Each run
+  prints the plan (enabled and skipped stages) in its job summary.
+- Narrowing `stages:` weakens the pipeline, so the file is covered by
+  `CODEOWNERS`: review changes to it like you would review an exception.
+- `codeql` is free for public repositories; on private repositories it needs
+  GitHub Code Security. That is why it is opt-in and why Semgrep stays the
+  default SAST.
+
 ## Modules and tools
 
 Each row is a reusable workflow; each column is a CI step; each cell lists the
@@ -102,6 +142,9 @@ tools that run in that step. `–` means the step does not apply to that module.
 | **Container** (`container`) | `docker buildx` (no push) | hadolint | – | – | – | Trivy image (vuln · secret · misconfig) |
 | **IaC** (`iac`) | – | terraform fmt/validate · tflint · ansible-lint · helm lint · kubeconform | Checkov | – | – | Trivy config (misconfig · secret) |
 | **Scripts** (`scripts`) | – | ShellCheck · PSScriptAnalyzer | – | Gitleaks | – | – |
+
+The opt-in `codeql` stage adds CodeQL to the SAST column of the Java/Kotlin,
+Node/TypeScript, Python and Go modules.
 
 Every module ends in the same `gate`, which runs once. `container`, `iac` and
 `scripts` are **additive**, not alternatives to the language modules: a Java

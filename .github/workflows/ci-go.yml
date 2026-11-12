@@ -13,7 +13,19 @@ permissions:
   pull-requests: write
 
 jobs:
+  plan:
+    name: plan stages
+    runs-on: ubuntu-latest
+    outputs:
+      stages: ${{ steps.plan.outputs.stages }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - id: plan
+        uses: pixelotes/ci-security-baseline/actions/plan-stages@v1
+
   build:
+    needs: plan
+    if: contains(needs.plan.outputs.stages, ',build,')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -23,6 +35,8 @@ jobs:
       - run: go test ./... -race
 
   lint:
+    needs: plan
+    if: contains(needs.plan.outputs.stages, ',lint,')
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
@@ -31,6 +45,8 @@ jobs:
         with: { version: latest }
 
   sast:
+    needs: plan
+    if: contains(needs.plan.outputs.stages, ',sast,')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -38,6 +54,8 @@ jobs:
         with: { config: 'p/ci p/golang p/secrets' }
 
   secrets:
+    needs: plan
+    if: contains(needs.plan.outputs.stages, ',secret-scan,')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -45,16 +63,34 @@ jobs:
       - uses: pixelotes/ci-security-baseline/actions/scan-gitleaks@v1
 
   sca:
+    needs: plan
+    if: contains(needs.plan.outputs.stages, ',sca,')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pixelotes/ci-security-baseline/actions/scan-trivy-fs@v1
 
+  codeql:
+    needs: plan
+    if: contains(needs.plan.outputs.stages, ',codeql,')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pixelotes/ci-security-baseline/actions/scan-codeql@v1
+        with:
+          languages: go
+          build-mode: autobuild
+
   gate:
-    needs: [build, lint, sast, secrets, sca]
+    needs: [plan, build, lint, sast, secrets, sca, codeql]
     if: always()
     runs-on: ubuntu-latest
     steps:
+      - name: Fail if the stage plan is invalid
+        if: needs.plan.result != 'success'
+        run: |
+          echo "::error::The stage plan failed (see the 'plan stages' job): refusing to pass"
+          exit 1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 0 }
       - uses: pixelotes/ci-security-baseline/actions/gate@v1
