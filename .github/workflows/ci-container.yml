@@ -1,6 +1,6 @@
-# NO es alternativa a los módulos de lenguaje: es un añadido. Un repo Java con
-# Dockerfile y charts llama a los tres, y el gate corre una sola vez
-# consumiendo los artefactos de todos.
+# NOT an alternative to the language modules: it is an addition. A Java repo
+# with a Dockerfile and charts calls all three, and the gate runs only once,
+# consuming the artifacts of all of them.
 name: baseline · container
 
 on:
@@ -12,7 +12,7 @@ on:
       standalone:
         type: boolean
         default: false
-        description: 'true si este módulo corre solo y debe ejecutar el gate'
+        description: 'true if this module runs on its own and must run the gate'
       severity-gate: { type: string, default: 'high' }
       cutoff-date:   { type: string, default: '' }
 
@@ -48,7 +48,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-      - name: Construir (sin publicar)
+      - name: Build (without publishing)
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: ${{ inputs.context }}
@@ -56,7 +56,7 @@ jobs:
           push: false
           load: true
           tags: local/scan:${{ github.sha }}
-          # sin caché de capas este módulo es el más caro de todo el baseline
+          # without layer caching this module is the most expensive in the whole baseline
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - uses: pixelotes/ci-security-baseline/actions/scan-trivy-image@v1

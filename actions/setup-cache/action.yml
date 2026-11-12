@@ -1,7 +1,8 @@
-name: 'Caché de dependencias'
+name: 'Dependency cache'
 description: >
-  Con runners hosted y 3.000 minutos incluidos al mes, la caché no es una
-  optimización: es lo que hace viable extenderlo a toda la organización.
+  With hosted runners and 3,000 included minutes per month, the cache is not
+  an optimization: it is what makes rolling this out to the whole organization
+  viable.
 inputs:
   stack: { required: true, description: 'jvm-maven | jvm-gradle | node | python | go' }
 runs:

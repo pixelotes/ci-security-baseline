@@ -1,16 +1,16 @@
 name: 'Opengrep (SAST)'
 description: >
-  SAST del baseline con Opengrep (fork comunitario de Semgrep CE). Binario
-  único con checksum fijado: no instala Python ni dependencias. Emite SARIF y
-  nunca falla por sí mismo: decide el gate.
+  Baseline SAST with Opengrep (community fork of Semgrep CE). Single binary
+  with a pinned checksum: it installs neither Python nor dependencies. Emits
+  SARIF and never fails on its own: the gate decides.
 inputs:
   config:
-    description: 'Rulesets adicionales separados por espacio'
+    description: 'Additional rulesets, space-separated'
     default: 'p/ci p/secrets'
 runs:
   using: composite
   steps:
-    - name: Instalar Opengrep (versión y checksum fijados)
+    - name: Install Opengrep (pinned version and checksum)
       shell: bash
       env:
         VERSION: v1.33.1
@@ -29,8 +29,8 @@ runs:
         mkdir -p reports
         ARGS=()
         for c in $CONFIGS; do ARGS+=(--config "$c"); done
-        # Sin --error a propósito: el corte lo pone el gate, no el escáner.
-        # Opengrep no envía telemetría, así que no hay flag --metrics.
+        # No --error on purpose: the gate sets the cut-off, not the scanner.
+        # Opengrep sends no telemetry, so there is no --metrics flag.
         "$RUNNER_TEMP/bin/opengrep" scan --quiet \
           --sarif --output reports/opengrep.sarif \
           "${ARGS[@]}" \

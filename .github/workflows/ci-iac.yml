@@ -1,5 +1,5 @@
-# Terraform, Helm, Kubernetes y Ansible. Igual que container, es un módulo
-# aditivo, no una alternativa.
+# Terraform, Helm, Kubernetes and Ansible. Like container, it is an additive
+# module, not an alternative.
 name: baseline · iac
 
 on:

@@ -1,11 +1,11 @@
-name: 'Trivy filesystem (SCA + licencias)'
-description: 'SCA sobre lockfiles. Motor único para SCA, IaC y contenedor.'
+name: 'Trivy filesystem (SCA + licenses)'
+description: 'SCA over lockfiles. Single engine for SCA, IaC and containers.'
 inputs:
   scanners: { description: 'vuln,secret,license,misconfig', default: 'vuln,license' }
 runs:
   using: composite
   steps:
-    - name: Caché de la BD de vulnerabilidades
+    - name: Vulnerability DB cache
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ~/.cache/trivy
@@ -18,7 +18,7 @@ runs:
         scanners: ${{ inputs.scanners }}
         format: sarif
         output: reports/trivy-fs.sarif
-        exit-code: '0'   # decide el gate
+        exit-code: '0'   # the gate decides
         cache-dir: ~/.cache/trivy
     - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       if: always()

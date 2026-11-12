@@ -1,11 +1,11 @@
 # demo-python
 
-Repositorio de ejemplo con hallazgos **plantados a propósito** para comprobar
-que el gate bloquea de verdad.
+Example repository with findings **planted on purpose** to check that the gate
+really blocks.
 
 ```bash
 ../../new-repo.sh --adopt . --dry-run
 ```
 
-Hallazgos esperados: un secreto embebido, un hash MD5, un `shell=True` y dos
-dependencias con CVE conocido.
+Expected findings: an embedded secret, an MD5 hash, a `shell=True` and two
+dependencies with known CVEs.

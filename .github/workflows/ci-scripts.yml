@@ -1,5 +1,5 @@
-# Shell y PowerShell suelen quedarse sin cobertura de lint. Coste casi nulo,
-# cobertura inmediata.
+# Shell and PowerShell usually go without lint coverage. Almost no cost,
+# immediate coverage.
 name: baseline · scripts
 
 on:

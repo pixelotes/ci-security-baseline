@@ -1,5 +1,5 @@
 name: 'Checkov (IaC)'
-description: 'Terraform, Helm, manifests de Kubernetes y Dockerfile.'
+description: 'Terraform, Helm, Kubernetes manifests and Dockerfile.'
 runs:
   using: composite
   steps:

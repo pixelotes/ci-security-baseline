@@ -1,8 +1,8 @@
-name: 'Gitleaks (secretos en el diff)'
+name: 'Gitleaks (secrets in the diff)'
 description: >
-  Escanea solo el diff del PR. Rápido y con muchos falsos positivos, por eso
-  informa y no bloquea por sí solo. El bloqueo real lo aporta TruffleHog
-  verificado en la nocturna.
+  Scans only the PR diff. Fast but with many false positives, so it reports
+  and does not block on its own. The real blocking comes from verified
+  TruffleHog in the nightly run.
 runs:
   using: composite
   steps:

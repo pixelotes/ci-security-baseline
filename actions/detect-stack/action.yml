@@ -1,10 +1,10 @@
-name: 'Detectar stack'
+name: 'Detect stack'
 description: >
-  Clasifica el repositorio por señales de build. Busca hasta dos niveles de
-  profundidad: muchos repos Python no tienen pyproject.toml ni requirements en
-  la raíz, sino en subdirectorios.
+  Classifies the repository by build signals. Searches up to two levels deep:
+  many Python repos have no pyproject.toml or requirements at the root, only
+  in subdirectories.
 outputs:
-  stacks:      { description: 'JSON array de stacks detectados', value: '${{ steps.d.outputs.stacks }}' }
+  stacks:      { description: 'JSON array of detected stacks', value: '${{ steps.d.outputs.stacks }}' }
   has-maven:   { description: '', value: '${{ steps.d.outputs.has-maven }}' }
   has-gradle:  { description: '', value: '${{ steps.d.outputs.has-gradle }}' }
   has-node:    { description: '', value: '${{ steps.d.outputs.has-node }}' }
@@ -42,4 +42,4 @@ runs:
         emit node-pm "$pm"
 
         printf 'stacks=%s\n' "$(printf '%s\n' "${found[@]:-}" | grep -v '^$' | jq -R . | jq -cs .)" >> "$GITHUB_OUTPUT"
-        echo "Stacks detectados: ${found[*]:-ninguno}"
+        echo "Detected stacks: ${found[*]:-none}"

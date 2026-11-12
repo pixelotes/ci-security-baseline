@@ -1,51 +1,51 @@
 name: 'Security baseline gate'
 description: >
-  Agrega los SARIF de todos los escáneres, normaliza la severidad, aplica las
-  excepciones de .security-baseline.yml y la fecha de corte, y decide si el PR
-  se bloquea. Es el único paso del pipeline que falla a propósito.
+  Aggregates the SARIF files of every scanner, normalizes severity, applies the
+  exceptions of .security-baseline.yml and the cutoff date, and decides whether
+  the PR is blocked. It is the only step of the pipeline that fails on purpose.
 inputs:
   reports-dir:
-    description: 'Directorio con los SARIF descargados'
+    description: 'Directory holding the downloaded SARIF files'
     default: 'reports'
   severity:
-    description: 'Umbral de bloqueo: critical | high | medium | low'
+    description: 'Blocking threshold: critical | high | medium | low'
     default: ''
   cutoff:
-    description: 'Fecha de corte YYYY-MM-DD (sobreescribe la del repo)'
+    description: 'Cutoff date YYYY-MM-DD (overrides the one in the repo)'
     default: ''
   comment-pr:
-    description: 'Publicar/actualizar el comentario en el PR'
+    description: 'Post/update the PR comment'
     default: 'true'
 outputs:
   passed:
-    description: 'true si no hay hallazgos bloqueantes'
+    description: 'true when there are no blocking findings'
     value: ${{ steps.run.outputs.passed }}
   blocking-count:
-    description: 'Número de hallazgos bloqueantes'
+    description: 'Number of blocking findings'
     value: ${{ steps.run.outputs.blocking-count }}
 runs:
   using: composite
   steps:
-    - name: Descargar los SARIF de los jobs de escaneo
+    - name: Download the SARIF files of the scan jobs
       uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
       with:
         pattern: sarif-*
         path: ${{ inputs.reports-dir }}
         merge-multiple: true
 
-    - name: Preparar Python
+    - name: Set up Python
       uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
       with:
         python-version: '3.12'
 
-    - name: Instalar dependencias del gate
+    - name: Install the gate dependencies
       shell: bash
       run: pip install --quiet pyyaml
 
-    - name: Ejecutar el gate
+    - name: Run the gate
       id: run
       shell: bash
-      # No lleva continue-on-error a propósito: este paso ES la decisión.
+      # No continue-on-error on purpose: this step IS the decision.
       run: |
         python "${{ github.action_path }}/gate.py" \
           --reports "${{ inputs.reports-dir }}" \
@@ -55,14 +55,14 @@ runs:
           --severity "${{ inputs.severity }}" \
           --cutoff "${{ inputs.cutoff }}"
 
-    - name: Comentar en el PR
+    - name: Comment on the PR
       if: always() && inputs.comment-pr == 'true' && github.event_name == 'pull_request'
       uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
       with:
         header: security-baseline-gate
         path: ${{ inputs.reports-dir }}/gate-summary.md
 
-    - name: Publicar el resultado agregado
+    - name: Publish the aggregated result
       if: always()
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:

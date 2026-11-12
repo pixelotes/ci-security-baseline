@@ -1,59 +1,61 @@
-# Excepciones
+# Exceptions
 
-## Formato
+## Format
 
 ```yaml
 exceptions:
-  - id: CVE-2025-48795          # ruleId o CVE
-    tool: trivy                 # opcional: acota a una herramienta
-    scope: 'pom.xml'            # opcional: glob sobre la ruta
-    reason: 'No explotable: el parser XML no recibe entrada externa'
+  - id: CVE-2025-48795          # ruleId or CVE
+    tool: trivy                 # optional: restrict to one tool
+    scope: 'pom.xml'            # optional: glob on the path
+    reason: 'Not exploitable: the XML parser receives no external input'
     owner: '@pixelotes/team-alpha'
-    expires: '2026-12-15'       # OBLIGATORIO
+    expires: '2026-12-15'       # MANDATORY
 ```
 
-## `expires` es obligatorio
+## `expires` is mandatory
 
-Una excepción sin fecha de caducidad hace **fallar el gate**, aunque no haya
-ningún hallazgo bloqueante. No es un descuido del diseño: es el diseño.
+An exception without an expiry date makes the **gate fail**, even if there is
+no blocking finding. This is not a design oversight: it is the design.
 
-Sin caducidad, el fichero de excepciones crece de forma monótona y en seis
-meses el gate no bloquea nada, mientras el dashboard sigue en verde. Con
-caducidad, cada excepción vuelve a la mesa con un responsable con nombre.
+Without expiry, the exceptions file grows monotonically and in six months the
+gate blocks nothing while the dashboard stays green. With expiry, every
+exception comes back to the table with a named owner.
 
-Al vencer, el gate falla y el mensaje dice cuál venció. Renovarla es explícito
-y queda en el historial de git: quién, cuándo y por qué.
+When one expires, the gate fails and the message says which one. Renewing it is
+explicit and stays in git history: who, when and why.
 
-## `reason` se lee
+## `reason` gets read
 
-Escribe por qué **este** hallazgo no aplica, no qué es la vulnerabilidad.
+Write why **this** finding does not apply, not what the vulnerability is.
 
-- Mal: `'CVE en la librería XML'`
-- Bien: `'El parser solo procesa ficheros del propio repositorio; no hay
-  entrada externa que pueda contener una entidad maliciosa'`
+- Bad: `'CVE in the XML library'`
+- Good: `'The parser only processes files from the repository itself; there is
+  no external input that could contain a malicious entity'`
 
-Quien revise la renovación dentro de tres meses no tiene tu contexto de hoy.
+Whoever reviews the renewal three months from now does not have your context
+from today.
 
-## Buenas prácticas de `scope`
+## Good practices for `scope`
 
-Acota siempre que puedas. Una excepción sin `scope` aplica a todo el repo, así
-que una vulnerabilidad idéntica en un módulo nuevo pasa sin que nadie la vea.
+Narrow it whenever you can. An exception without `scope` applies to the whole
+repo, so an identical vulnerability in a new module passes without anyone
+seeing it.
 
 ```yaml
-scope: 'src/test/resources/fixtures/**'   # bien
-scope: '**'                               # equivale a no ponerlo
+scope: 'src/test/resources/fixtures/**'   # good
+scope: '**'                               # same as leaving it out
 ```
 
-## Lo que NO se excepciona
+## What is NOT excepted
 
-- **Secretos verificados por TruffleHog.** Están confirmados contra el
-  proveedor. Se rotan, no se excepcionan.
-- **Exposición pública de recursos en IaC** (`CKV_*_public_*`). Si de verdad
-  tiene que ser público, va por una decisión de arquitectura documentada, no
-  por una línea en un YAML.
+- **Secrets verified by TruffleHog.** They are confirmed against the provider.
+  They get rotated, not excepted.
+- **Public exposure of resources in IaC** (`CKV_*_public_*`). If it really has
+  to be public, it goes through a documented architecture decision, not a line
+  in a YAML file.
 
-## Revisión
+## Review
 
-`CODEOWNERS` pone a `@pixelotes` como revisor obligatorio de
-`.security-baseline.yml`. Una excepción sin revisar es la forma más silenciosa
-de desactivar el gate.
+`CODEOWNERS` makes `@pixelotes` a mandatory reviewer of
+`.security-baseline.yml`. An unreviewed exception is the quietest way to
+disable the gate.

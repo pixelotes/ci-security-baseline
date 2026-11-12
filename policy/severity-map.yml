@@ -1,14 +1,14 @@
-# Normalización de severidad entre herramientas.
+# Severity normalization across tools.
 #
-# Cada escáner usa su propia escala: Trivy habla CVSS, Semgrep habla
-# ERROR/WARNING, Checkov habla de checks. Sin esta tabla, "high" significa
-# cosas distintas en cada SARIF y el gate no puede decidir de forma coherente.
+# Each scanner uses its own scale: Trivy speaks CVSS, Semgrep speaks
+# ERROR/WARNING, Checkov speaks in checks. Without this table, "high" means
+# different things in each SARIF and the gate cannot decide consistently.
 #
-# Orden de precedencia dentro del gate:
-#   1. overrides de esta tabla (patrón glob sobre el ruleId)
-#   2. properties.security-severity (CVSS) si existe
-#   3. etiqueta textual de severidad de la herramienta
-#   4. levels de esta tabla, a partir del level SARIF
+# Order of precedence inside the gate:
+#   1. overrides from this table (glob pattern on the ruleId)
+#   2. properties.security-severity (CVSS), if present
+#   3. the tool's textual severity label
+#   4. levels from this table, based on the SARIF level
 
 levels:
   error: high
@@ -17,12 +17,12 @@ levels:
   none: info
 
 overrides:
-  # Un secreto verificado contra el proveedor es cierto por definición.
+  # A secret verified against the provider is true by definition.
   trufflehog:
     '*': critical
 
-  # Gitleaks trabaja sobre el diff y tiene falsos positivos; informa alto pero
-  # no crítico. El bloqueo real de secretos lo aporta trufflehog en la nocturna.
+  # Gitleaks works on the diff and has false positives; it reports high but
+  # not critical. The real blocking of secrets comes from trufflehog in the nightly.
   gitleaks:
     '*': high
 
@@ -30,15 +30,15 @@ overrides:
     '*.security.*': high
     'generic.secrets.*': high
 
-  # Opengrep lee las mismas reglas y las nombra igual
+  # Opengrep reads the same rules and names them the same way
   opengrep: *sast-overrides
 
   checkov:
-    # exposición pública de recursos: no admite discusión
+    # public exposure of resources: not up for debate
     'CKV_AZURE_*_public_*': critical
     'CKV_AWS_*_public_*': critical
 
   hadolint:
-    'DL3002': medium   # último usuario root
-    'DL3008': low      # versiones sin fijar en apt
-    'DL3018': low      # versiones sin fijar en apk
+    'DL3002': medium   # last user is root
+    'DL3008': low      # unpinned versions in apt
+    'DL3018': low      # unpinned versions in apk

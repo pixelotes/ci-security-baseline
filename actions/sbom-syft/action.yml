@@ -1,10 +1,10 @@
-name: 'SBOM con Syft'
-description: 'Genera CycloneDX 1.6 del artefacto o de la imagen.'
+name: 'SBOM with Syft'
+description: 'Generates a CycloneDX 1.6 SBOM of the artifact or image.'
 inputs:
-  source: { description: 'Ruta o referencia de imagen', default: '.' }
-  name:   { description: 'Nombre base del fichero', default: 'sbom' }
+  source: { description: 'Path or image reference', default: '.' }
+  name:   { description: 'Base file name', default: 'sbom' }
 outputs:
-  path: { description: 'Ruta del SBOM generado', value: 'reports/${{ inputs.name }}.cdx.json' }
+  path: { description: 'Path of the generated SBOM', value: 'reports/${{ inputs.name }}.cdx.json' }
 runs:
   using: composite
   steps:

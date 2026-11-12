@@ -1,9 +1,9 @@
-# El baseline se aplica a sí mismo (ola 0 del despliegue). Si el gate no puede
-# pasar aquí, no está listo para el resto de la organización.
+# The baseline applies itself (wave 0 of the rollout). If the gate cannot pass
+# here, it is not ready for the rest of the organization.
 version: 1
 
 gate:
   severity: high
-  # repo nuevo: sin deuda previa que tolerar
+  # new repo: no prior debt to tolerate
 
 exceptions: []

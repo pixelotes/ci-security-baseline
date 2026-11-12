@@ -1,11 +1,11 @@
 reports/
 *.sarif
-# los SARIF de ejemplo sí se versionan: probar-gate.sh los necesita
+# the example SARIFs are versioned: probar-gate.sh needs them
 !examples/sarif/*.sarif
 __pycache__/
 .pytest_cache/
 .venv/
 bin/gitleaks
-# configuración local que no debe publicarse
+# local configuration that must not be published
 policy/gitleaks.local.toml
 baseline.conf

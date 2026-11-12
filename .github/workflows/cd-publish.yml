@@ -1,8 +1,8 @@
-# CD: publicación con cadena de suministro verificable.
+# CD: publishing with a verifiable supply chain.
 #
-# El contrato es distinto al de CI: aquí no hay presupuesto de tiempo, hay
-# presupuesto de trazabilidad. Cada publicación deja SBOM, inventario en
-# Dependency-Track y firma.
+# The contract differs from CI: there is no time budget here, there is a
+# traceability budget. Every publication leaves an SBOM, an inventory in
+# Dependency-Track and a signature.
 name: baseline · cd publish
 
 on:
@@ -12,7 +12,7 @@ on:
       artifact-name:    { type: string, required: true }
       version:          { type: string, required: true }
       environment:      { type: string, default: 'prod' }
-      registry:         { type: string, default: '' }      # p.ej. myorg.azurecr.io
+      registry:         { type: string, default: '' }      # e.g. myorg.azurecr.io
       dtrack-url:       { type: string, required: true }
       keyvault:         { type: string, required: true }
       cosign-key-uri:   { type: string, default: '' }
@@ -25,20 +25,20 @@ on:
 
 permissions:
   contents: read
-  id-token: write        # OIDC hacia Entra ID — solo aquí, nunca en CI
+  id-token: write        # OIDC to Entra ID — only here, never in CI
   attestations: write
 
 jobs:
   publish:
-    # El environment es lo que hace real el scoping OIDC: la federated
-    # credential se acota a repo:ORG/REPO:environment:<este>, y el
-    # environment lleva required reviewers.
+    # The environment is what makes the OIDC scoping real: the federated
+    # credential is scoped to repo:ORG/REPO:environment:<this one>, and the
+    # environment has required reviewers.
     environment: ${{ inputs.environment }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Login en Azure (OIDC) y lectura de Key Vault
+      - name: Azure login (OIDC) and Key Vault read
         uses: pixelotes/ci-security-baseline/actions/azure-login@v1
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -47,7 +47,7 @@ jobs:
           keyvault: ${{ inputs.keyvault }}
           secrets: 'dtrack-api-key'
 
-      - name: Construir artefacto
+      - name: Build artifact
         id: build
         run: |
           set -euo pipefail
@@ -68,7 +68,7 @@ jobs:
           source: ${{ inputs.stack == 'container' && format('{0}/{1}:{2}', inputs.registry, inputs.artifact-name, inputs.version) || '.' }}
           name: ${{ inputs.artifact-name }}
 
-      - name: Dependency-Track — inventario y gate de política
+      - name: Dependency-Track — inventory and policy gate
         uses: pixelotes/ci-security-baseline/actions/dtrack-upload@v1
         with:
           sbom: ${{ steps.sbom.outputs.path }}
@@ -78,7 +78,7 @@ jobs:
           api-key: ${{ env.dtrack_api_key }}
           fail-on: ${{ inputs.dtrack-fail-on }}
 
-      - name: Publicar
+      - name: Publish
         run: |
           set -euo pipefail
           case "${{ inputs.stack }}" in
@@ -92,7 +92,7 @@ jobs:
               pip install twine && twine upload dist/* ;;
           esac
 
-      - name: Firmar
+      - name: Sign
         if: inputs.stack == 'container'
         uses: pixelotes/ci-security-baseline/actions/sign-artifact@v1
         with:
@@ -100,7 +100,7 @@ jobs:
           method: ${{ inputs.sign-method }}
           key-uri: ${{ inputs.cosign-key-uri }}
 
-      - name: Verificar lo publicado antes de promover
+      - name: Verify what was published before promoting
         if: inputs.stack == 'container'
         run: |
           set -euo pipefail

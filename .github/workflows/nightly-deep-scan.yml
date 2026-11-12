@@ -1,15 +1,15 @@
-# Lo que no cabe en el presupuesto de 10 minutos del PR.
+# What does not fit in the PR's 10-minute budget.
 #
-# Aquí va el historial completo de secretos (TruffleHog verificado), el
-# re-escaneo de las imágenes ya publicadas en ACR y el SCA exhaustivo. Con
-# 3.000 minutos incluidos al mes, esto es lo que mantiene el PR barato.
+# This is where the full secrets history (verified TruffleHog), the re-scan of
+# images already published to ACR and the exhaustive SCA go. With 3,000
+# included minutes per month, this is what keeps the PR cheap.
 name: baseline · nightly deep scan
 
 on:
   workflow_call:
     inputs:
       registry:  { type: string, default: '' }
-      images:    { type: string, default: '' }   # lista separada por comas
+      images:    { type: string, default: '' }   # comma-separated list
       severity-gate: { type: string, default: 'critical' }
   schedule:
     - cron: '0 2 * * *'
@@ -21,7 +21,7 @@ permissions:
 
 jobs:
   secrets-history:
-    name: trufflehog (historial, verificados)
+    name: trufflehog (history, verified)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -36,7 +36,7 @@ jobs:
         with: { scanners: 'vuln,secret,license,misconfig' }
 
   registry-rescan:
-    name: re-scan de imágenes publicadas
+    name: re-scan of published images
     if: inputs.images != ''
     runs-on: ubuntu-latest
     strategy:
@@ -59,10 +59,10 @@ jobs:
         with:
           severity: ${{ inputs.severity-gate }}
           comment-pr: 'false'
-      - name: Abrir incidente si hay bloqueantes
+      - name: Open an incident if there are blockers
         if: steps.gate.outputs.passed == 'false'
         uses: peter-evans/create-issue-from-file@fca9117c27cdc29c6c4db3b86c48e4115a786710 # v6.0.0
         with:
-          title: "Security baseline · hallazgos críticos en el escaneo nocturno"
+          title: "Security baseline · critical findings in the nightly scan"
           content-filepath: reports/gate-summary.md
           labels: security,nightly

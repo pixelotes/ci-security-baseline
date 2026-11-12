@@ -1,26 +1,26 @@
 #!/usr/bin/env bash
 #
-# new-repo.sh — genera un repositorio ya enganchado al security baseline,
-# o engancha uno que ya existe.
+# new-repo.sh — generates a repository already hooked into the security baseline,
+# or hooks an existing one.
 #
-# Escribe únicamente dos ficheros de baseline en el repo destino:
-#   .github/workflows/ci.yml   (llamador de ~15 líneas)
-#   .security-baseline.yml     (umbral, fecha de corte y excepciones)
+# Writes only two baseline files into the target repo:
+#   .github/workflows/ci.yml   (caller of ~15 lines)
+#   .security-baseline.yml     (threshold, cutoff date and exceptions)
 #
-# La lógica del pipeline NO se copia: vive en pixelotes/ci-security-baseline y se
-# referencia por tag. Por eso una mejora del baseline llega a todos los repos
-# moviendo el tag, sin abrir un PR por repositorio.
+# The pipeline logic is NOT copied: it lives in pixelotes/ci-security-baseline and
+# is referenced by tag. So a baseline improvement reaches every repo by moving
+# the tag, without opening a PR per repository.
 #
-#   ./new-repo.sh                      modo interactivo, repo nuevo
-#   ./new-repo.sh --adopt ../mi-repo   añade el baseline a un repo existente
-#   ./new-repo.sh --dry-run            muestra lo que haría y no escribe nada
+#   ./new-repo.sh                      interactive mode, new repo
+#   ./new-repo.sh --adopt ../my-repo   adds the baseline to an existing repo
+#   ./new-repo.sh --dry-run            shows what it would do and writes nothing
 #   ./new-repo.sh --help
 #
-# Compatible con bash 3.2 (el de macOS).
+# Compatible with bash 3.2 (the one on macOS).
 
 set -euo pipefail
 
-# ------------------------------------------------------------------ estilo
+# ------------------------------------------------------------------ style
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   B=$'\033[1m'; DIM=$'\033[2m'; R=$'\033[0m'
@@ -37,7 +37,7 @@ die()  { printf '%s✗ %s%s\n' "$RD" "$*" "$R" >&2; exit 1; }
 
 # ------------------------------------------------------------------ config
 
-# La org no viene cableada: se toma de baseline.conf, del entorno, o de gh.
+# The org is not hardwired: it comes from baseline.conf, the environment, or gh.
 [ -f "$(dirname "$0")/baseline.conf" ] && . "$(dirname "$0")/baseline.conf"
 BASELINE_ORG="${BASELINE_ORG:-pixelotes}"
 BASELINE_REPO="${BASELINE_REPO:-ci-security-baseline}"
@@ -52,7 +52,7 @@ OUT_DIR="."
 
 # ------------------------------------------------------------------ prompts
 
-# ask VAR "Pregunta" "por-defecto"
+# ask VAR "Question" "default"
 ask() {
   local __var="$1" __prompt="$2" __default="${3:-}" __reply=""
   if [ -n "$__default" ]; then
@@ -65,10 +65,10 @@ ask() {
   eval "$__var=\$__reply"
 }
 
-# confirm "Pregunta" "s|n"  -> 0 si sí
+# confirm "Question" "y|n"  -> 0 if yes
 confirm() {
   local prompt="$1" default="${2:-n}" reply=""
-  local hint="s/N"; [ "$default" = "s" ] && hint="S/n"
+  local hint="y/N"; [ "$default" = "y" ] && hint="Y/n"
   printf '%s %s[%s]%s ' "$prompt" "$DIM" "$hint" "$R"
   read -r reply || true
   [ -z "$reply" ] && reply="$default"
@@ -78,7 +78,7 @@ confirm() {
   esac
 }
 
-# choose VAR "Pregunta" "opt1 opt2 opt3" "por-defecto"
+# choose VAR "Question" "opt1 opt2 opt3" "default"
 choose() {
   local __var="$1" __prompt="$2" __opts="$3" __default="$4"
   local o i=1 reply=""
@@ -86,25 +86,25 @@ choose() {
   say "$__prompt"
   for o in $__opts; do
     if [ "$o" = "$__default" ]; then
-      printf '  %s%d)%s %s %s(por defecto)%s\n' "$B" "$i" "$R" "$o" "$DIM" "$R"
+      printf '  %s%d)%s %s %s(default)%s\n' "$B" "$i" "$R" "$o" "$DIM" "$R"
     else
       printf '  %s%d)%s %s\n' "$B" "$i" "$R" "$o"
     fi
     i=$((i + 1))
   done
-  printf 'Elige [%s]: ' "$__default"
+  printf 'Choose [%s]: ' "$__default"
   read -r reply || true
   if [ -z "$reply" ]; then
     eval "$__var=\$__default"; return
   fi
   case "$reply" in
     ''|*[!0-9]*)
-      # han escrito el nombre: solo se acepta si está entre las opciones,
-      # para que una respuesta desplazada no se cuele como valor válido
+      # they typed the name: only accepted if it is among the options,
+      # so that a shifted answer does not slip through as a valid value
       for o in $__opts; do
         [ "$o" = "$reply" ] && { eval "$__var=\$o"; return; }
       done
-      warn "\"$reply\" no es una opción válida; se usa $__default"
+      warn "\"$reply\" is not a valid option; using $__default"
       eval "$__var=\$__default"
       ;;
     *)
@@ -120,7 +120,7 @@ choose() {
 
 lower() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
 
-# escribe un fichero respetando --dry-run
+# writes a file, honouring --dry-run
 emit() {
   local path="$1"
   if [ "$DRY_RUN" = "1" ]; then
@@ -133,9 +133,9 @@ emit() {
   ok "$path"
 }
 
-# ------------------------------------------------------------------ detección
+# ------------------------------------------------------------------ detection
 
-# Detecta stacks en un repo existente. Ecoa una lista separada por espacios.
+# Detects stacks in an existing repo. Echoes a space-separated list.
 detect_stacks() {
   local dir="$1" found=""
   _has() { [ -n "$(find "$dir" -maxdepth 3 -not -path '*/.git/*' -name "$1" -print 2>/dev/null | head -1)" ]; }
@@ -152,7 +152,7 @@ detect_stacks() {
   printf '%s' "${found# }"
 }
 
-# ------------------------------------------------------------------ argumentos
+# ------------------------------------------------------------------ arguments
 
 usage() {
   sed -n '3,22p' "$0" | sed 's/^# \{0,1\}//'
@@ -166,72 +166,72 @@ while [ $# -gt 0 ]; do
     --ref)     BASELINE_REF="${2:-v1}"; shift 2 ;;
     --dry-run) DRY_RUN=1; shift ;;
     -h|--help) usage ;;
-    *) die "Opción desconocida: $1  (usa --help)" ;;
+    *) die "Unknown option: $1  (use --help)" ;;
   esac
 done
 
-# ------------------------------------------------------------------ 1. identidad
+# ------------------------------------------------------------------ 1. identity
 
 cat <<BANNER
 
-${B}security baseline · generador de repositorio${R}
-${DIM}plataforma y seguridad${R}
+${B}security baseline · repository generator${R}
+${DIM}platform and security${R}
 
-Este script escribe solo el llamador y la configuración de política.
-La lógica del pipeline vive en ${BASELINE_ORG}/${BASELINE_REPO}@${BASELINE_REF}.
+This script writes only the caller and the policy configuration.
+The pipeline logic lives in ${BASELINE_ORG}/${BASELINE_REPO}@${BASELINE_REF}.
 BANNER
 
-[ "$DRY_RUN" = "1" ] && warn "Modo --dry-run: no se escribirá ningún fichero."
+[ "$DRY_RUN" = "1" ] && warn "--dry-run mode: no files will be written."
 
-MODE="nuevo"
+MODE="new"
 if [ -n "$ADOPT_PATH" ]; then
-  [ -d "$ADOPT_PATH" ] || die "No existe el directorio: $ADOPT_PATH"
-  MODE="adopcion"
+  [ -d "$ADOPT_PATH" ] || die "Directory does not exist: $ADOPT_PATH"
+  MODE="adopt"
   TARGET="$ADOPT_PATH"
   REPO_NAME="$(basename "$(cd "$ADOPT_PATH" && pwd)")"
-  head1 "1 · Repositorio existente"
-  say "Adoptando: ${B}${TARGET}${R}"
+  head1 "1 · Existing repository"
+  say "Adopting: ${B}${TARGET}${R}"
 else
-  head1 "1 · Identidad del repositorio"
-  ask REPO_NAME "Nombre del repositorio:" ""
-  [ -n "$REPO_NAME" ] || die "El nombre es obligatorio."
+  head1 "1 · Repository identity"
+  ask REPO_NAME "Repository name:" ""
+  [ -n "$REPO_NAME" ] || die "The name is required."
   case "$REPO_NAME" in
-    *[!a-zA-Z0-9._-]*) die "Nombre no válido: usa solo letras, números, punto, guion y guion bajo." ;;
+    *[!a-zA-Z0-9._-]*) die "Invalid name: use only letters, numbers, dot, hyphen and underscore." ;;
   esac
   TARGET="$OUT_DIR/$REPO_NAME"
-  [ -e "$TARGET" ] && die "Ya existe: $TARGET"
+  [ -e "$TARGET" ] && die "Already exists: $TARGET"
 fi
 
-ask GH_ORG "Organización en GitHub:" "$BASELINE_ORG"
-ask OWNER  "Equipo propietario (CODEOWNERS):" "@${GH_ORG}/$(lower "${REPO_NAME%%-*}")"
+ask GH_ORG "GitHub organization:" "$BASELINE_ORG"
+ask OWNER  "Owning team (CODEOWNERS):" "@${GH_ORG}/$(lower "${REPO_NAME%%-*}")"
 
 # ------------------------------------------------------------------ 2. stack
 
 head1 "2 · Stack"
 
 PRIMARY=""
-if [ "$MODE" = "adopcion" ]; then
+if [ "$MODE" = "adopt" ]; then
   DETECTED="$(detect_stacks "$TARGET")"
   if [ -n "$DETECTED" ]; then
-    say "Señales encontradas: ${B}${DETECTED}${R}"
+    say "Signals found: ${B}${DETECTED}${R}"
     for s in $DETECTED; do
       case "$s" in
         jvm-maven|jvm-gradle|node|python|go) [ -z "$PRIMARY" ] && PRIMARY="$s" ;;
       esac
     done
   else
-    warn "Sin señales de build reconocibles. Este repo necesita revisión manual."
+    warn "No recognizable build signals. This repo needs manual review."
   fi
 fi
 
-choose PRIMARY "¿Cuál es el stack principal?" \
+choose PRIMARY "What is the primary stack?" \
   "jvm-maven jvm-gradle node python go scripts" "${PRIMARY:-jvm-maven}"
 
 case "$PRIMARY" in
-  jvm-maven|jvm-gradle) ask LANG_VERSION "Versión de Java:"   "21" ;;
-  node)                 ask LANG_VERSION "Versión de Node:"   "22" ;;
-  python)               ask LANG_VERSION "Versión de Python:" "3.12" ;;
-  go)                   ask LANG_VERSION "Versión de Go:"     "1.23" ;;
+  jvm-maven|jvm-gradle) ask LANG_VERSION "Java version:"   "21" ;;
+  node)                 ask LANG_VERSION "Node version:"   "22" ;;
+  python)               ask LANG_VERSION "Python version:" "3.12" ;;
+  go)                   ask LANG_VERSION "Go version:"     "1.23" ;;
   *)                    LANG_VERSION="" ;;
 esac
 
@@ -240,57 +240,57 @@ HAS_IAC=false
 case " ${DETECTED:-} " in *" container "*) HAS_CONTAINER=true ;; esac
 case " ${DETECTED:-} " in *" iac "*) HAS_IAC=true ;; esac
 
-confirm "¿El repo construye una imagen de contenedor?" "$([ "$HAS_CONTAINER" = true ] && echo s || echo n)" \
+confirm "Does the repo build a container image?" "$([ "$HAS_CONTAINER" = true ] && echo y || echo n)" \
   && HAS_CONTAINER=true || HAS_CONTAINER=false
-confirm "¿Contiene Terraform, Helm o manifests de Kubernetes?" "$([ "$HAS_IAC" = true ] && echo s || echo n)" \
+confirm "Does it contain Terraform, Helm or Kubernetes manifests?" "$([ "$HAS_IAC" = true ] && echo y || echo n)" \
   && HAS_IAC=true || HAS_IAC=false
 
-# ------------------------------------------------------------------ 3. política
+# ------------------------------------------------------------------ 3. policy
 
-head1 "3 · Política del gate"
-say "${DIM}El gate es el único check obligatorio. Los escáneres solo reportan.${R}"
+head1 "3 · Gate policy"
+say "${DIM}The gate is the only required check. Scanners only report.${R}"
 
-choose SEVERITY "¿A partir de qué severidad se bloquea el merge?" \
+choose SEVERITY "From which severity is the merge blocked?" \
   "critical high medium" "high"
 
 say ""
-say "${DIM}La fecha de corte degrada a aviso lo introducido antes de ella.${R}"
-say "${DIM}Sin ella, aplicar el gate sobre un repo con deuda bloquea todos los PRs${R}"
-say "${DIM}la primera semana y alguien acaba desactivando el required check.${R}"
+say "${DIM}The cutoff date downgrades to warnings anything introduced before it.${R}"
+say "${DIM}Without it, applying the gate to a repo with existing debt blocks every PR${R}"
+say "${DIM}in the first week and someone ends up disabling the required check.${R}"
 DEFAULT_CUTOFF="$(date +%Y-%m-01)"
-if [ "$MODE" = "adopcion" ]; then
-  ask CUTOFF "Fecha de corte (YYYY-MM-DD, o '-' para ninguna):" "$DEFAULT_CUTOFF"
+if [ "$MODE" = "adopt" ]; then
+  ask CUTOFF "Cutoff date (YYYY-MM-DD, or '-' for none):" "$DEFAULT_CUTOFF"
 else
-  # un repo nuevo no tiene deuda previa: no necesita corte
-  ask CUTOFF "Fecha de corte (YYYY-MM-DD, vacío = sin corte):" ""
+  # a new repo has no prior debt: it needs no cutoff
+  ask CUTOFF "Cutoff date (YYYY-MM-DD, empty = no cutoff):" ""
 fi
-# con un default propuesto, una respuesta vacía no puede significar "ninguna":
-# hace falta una forma explícita de decirlo
+# with a proposed default, an empty answer cannot mean "none":
+# an explicit way to say so is needed
 case "$(printf '%s' "$CUTOFF" | tr '[:upper:]' '[:lower:]')" in
   -|none|ninguna|no) CUTOFF="" ;;
 esac
 if [ -n "$CUTOFF" ]; then
   case "$CUTOFF" in
     [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]) : ;;
-    *) die "Fecha de corte no válida: $CUTOFF (formato YYYY-MM-DD)" ;;
+    *) die "Invalid cutoff date: $CUTOFF (format YYYY-MM-DD)" ;;
   esac
 fi
 
-# ------------------------------------------------------------------ 4. entrega
+# ------------------------------------------------------------------ 4. delivery
 
-head1 "4 · Publicación"
+head1 "4 · Publishing"
 
 WANT_CD=false
-if confirm "¿Este repo publica artefactos (CD)?" "$([ "$MODE" = nuevo ] && echo s || echo n)"; then
+if confirm "Does this repo publish artifacts (CD)?" "$([ "$MODE" = new ] && echo y || echo n)"; then
   WANT_CD=true
-  ask ENVIRONMENT "Environment de GitHub para producción:" "prod"
-  ask DTRACK_URL  "URL de Dependency-Track:" "$DTRACK_URL_DEFAULT"
-  ask KEYVAULT    "Key Vault con los secretos de CI:" "$KEYVAULT_DEFAULT"
+  ask ENVIRONMENT "GitHub environment for production:" "prod"
+  ask DTRACK_URL  "Dependency-Track URL:" "$DTRACK_URL_DEFAULT"
+  ask KEYVAULT    "Key Vault with the CI secrets:" "$KEYVAULT_DEFAULT"
   if [ "$HAS_CONTAINER" = true ]; then
     ask REGISTRY "Azure Container Registry:" "$REGISTRY_DEFAULT"
-    choose SIGN_METHOD "Método de firma de imagen" "cosign-kms notation" "cosign-kms"
+    choose SIGN_METHOD "Image signing method" "cosign-kms notation" "cosign-kms"
     if [ "$SIGN_METHOD" = "cosign-kms" ]; then
-      ask COSIGN_KEY "URI de la clave en Key Vault:" "azurekms://${KEYVAULT}.vault.azure.net/cosign-signing-key"
+      ask COSIGN_KEY "Key URI in Key Vault:" "azurekms://${KEYVAULT}.vault.azure.net/cosign-signing-key"
     else
       COSIGN_KEY=""
     fi
@@ -298,39 +298,39 @@ if confirm "¿Este repo publica artefactos (CD)?" "$([ "$MODE" = nuevo ] && echo
     REGISTRY=""; SIGN_METHOD="cosign-kms"; COSIGN_KEY=""
   fi
   say ""
-  say "${DIM}Recuerda: la federated credential de Entra debe acotarse a${R}"
+  say "${DIM}Remember: the Entra federated credential must be scoped to${R}"
   say "${DIM}  repo:${GH_ORG}/${REPO_NAME}:environment:${ENVIRONMENT}${R}"
-  say "${DIM}Un subject con comodín permite que un PR obtenga token de producción.${R}"
+  say "${DIM}A wildcard subject lets a PR obtain a production token.${R}"
 fi
 
-# ------------------------------------------------------------------ 5. resumen
+# ------------------------------------------------------------------ 5. summary
 
 WORKFLOW="ci-${PRIMARY}.yml"
 [ "$PRIMARY" = "scripts" ] && WORKFLOW="ci-scripts.yml"
 
-head1 "5 · Resumen"
+head1 "5 · Summary"
 cat <<SUMMARY
-  Modo             ${MODE}
-  Destino          ${TARGET}
-  Organización     ${GH_ORG}
-  Propietario      ${OWNER}
-  Stack principal  ${PRIMARY}${LANG_VERSION:+ (${LANG_VERSION})}
-  Módulos extra    $([ "$HAS_CONTAINER" = true ] && printf 'container ')$([ "$HAS_IAC" = true ] && printf 'iac ')$([ "$HAS_CONTAINER" = false ] && [ "$HAS_IAC" = false ] && printf 'ninguno')
-  Gate             bloquea ${SEVERITY} y superior
-  Fecha de corte   ${CUTOFF:-sin corte}
-  CD               $([ "$WANT_CD" = true ] && printf 'sí → %s' "${ENVIRONMENT}" || printf 'no')
+  Mode             ${MODE}
+  Target           ${TARGET}
+  Organization     ${GH_ORG}
+  Owner            ${OWNER}
+  Primary stack    ${PRIMARY}${LANG_VERSION:+ (${LANG_VERSION})}
+  Extra modules    $([ "$HAS_CONTAINER" = true ] && printf 'container ')$([ "$HAS_IAC" = true ] && printf 'iac ')$([ "$HAS_CONTAINER" = false ] && [ "$HAS_IAC" = false ] && printf 'none')
+  Gate             blocks ${SEVERITY} and above
+  Cutoff date      ${CUTOFF:-no cutoff}
+  CD               $([ "$WANT_CD" = true ] && printf 'yes → %s' "${ENVIRONMENT}" || printf 'no')
   Baseline         ${GH_ORG}/${BASELINE_REPO}@${BASELINE_REF}
 SUMMARY
 
 say ""
-confirm "¿Generar?" "s" || { warn "Cancelado."; exit 0; }
+confirm "Generate?" "y" || { warn "Cancelled."; exit 0; }
 
-# ------------------------------------------------------------------ 6. generar
+# ------------------------------------------------------------------ 6. generate
 
-head1 "6 · Escribiendo"
+head1 "6 · Writing"
 
-# El bloque de inputs se construye antes: la sustitución de comandos dentro
-# de un heredoc se come los saltos de línea finales y pega las claves entre sí.
+# The inputs block is built beforehand: command substitution inside a heredoc
+# eats the trailing newlines and glues the keys together.
 CI_INPUTS=""
 case "$PRIMARY" in
   jvm-maven|jvm-gradle) CI_INPUTS="      java-version: '${LANG_VERSION}'" ;;
@@ -348,11 +348,11 @@ CI_INPUTS="${CI_INPUTS}      severity-gate: '${SEVERITY}'
       run-iac: true"
 
 emit "$TARGET/.github/workflows/ci.yml" <<CIEOF
-# Generado por ci-security-baseline/new-repo.sh
+# Generated by ci-security-baseline/new-repo.sh
 #
-# Este fichero no debe crecer. Todo lo variable va en los inputs de abajo o en
-# .security-baseline.yml. Si un cambio del baseline obliga a tocar este
-# fichero, es el baseline el que está mal diseñado.
+# This file must not grow. Everything variable goes in the inputs below or in
+# .security-baseline.yml. If a baseline change forces you to touch this
+# file, it is the baseline that is badly designed.
 name: CI
 
 on:
@@ -376,15 +376,15 @@ ${CI_INPUTS}
 CIEOF
 
 emit "$TARGET/.security-baseline.yml" <<POLEOF
-# Política del security baseline para ${REPO_NAME}.
+# Security baseline policy for ${REPO_NAME}.
 #
-# Toda excepción lleva owner y fecha de caducidad. Sin caducidad, en seis meses
-# este fichero es un cementerio y el gate no bloquea nada; con ella, cada
-# excepción vuelve a la mesa con un responsable con nombre.
+# Every exception carries an owner and an expiry date. Without expiry, in six
+# months this file is a graveyard and the gate blocks nothing; with it, each
+# exception comes back to the table with a named owner.
 version: 1
 
-# Etapas a ejecutar (opcional). Sin esta clave corren todas.
-# Nombres validos: build, lint, sast, secret-scan, sca, container-scan,
+# Stages to run (optional). Without this key they all run.
+# Valid names: build, lint, sast, secret-scan, sca, container-scan,
 # iac-scan, quality, all.
 # stages:
 #   - lint
@@ -392,19 +392,19 @@ version: 1
 
 gate:
   severity: ${SEVERITY}
-$([ -n "$CUTOFF" ] && printf "  cutoff: '%s'\n" "$CUTOFF" || printf "  # cutoff: '2026-10-01'   # repo nuevo: sin deuda previa que tolerar\n")
+$([ -n "$CUTOFF" ] && printf "  cutoff: '%s'\n" "$CUTOFF" || printf "  # cutoff: '2026-10-01'   # new repo: no prior debt to tolerate\n")
 exceptions: []
   # - id: CVE-2025-48795
   #   tool: trivy
   #   scope: 'pom.xml'
-  #   reason: 'No explotable: el parser no recibe entrada externa'
+  #   reason: 'Not exploitable: the parser receives no external input'
   #   owner: '${OWNER}'
-  #   expires: '2026-12-15'     # OBLIGATORIO
+  #   expires: '2026-12-15'     # MANDATORY
 POLEOF
 
 if [ "$WANT_CD" = true ]; then
   emit "$TARGET/.github/workflows/cd.yml" <<CDEOF
-# Generado por ci-security-baseline/new-repo.sh
+# Generated by ci-security-baseline/new-repo.sh
 name: CD
 
 on:
@@ -413,7 +413,7 @@ on:
 
 permissions:
   contents: read
-  id-token: write     # OIDC hacia Entra ID — solo en CD, nunca en CI
+  id-token: write     # OIDC hacia Entra ID — only in CD, never in CI
   attestations: write
 
 jobs:
@@ -434,18 +434,18 @@ CDEOF
 fi
 
 emit "$TARGET/CODEOWNERS" <<COEOF
-# Propietario del repositorio
+# Repository owner
 *                        ${OWNER}
 
-# La configuración de seguridad la revisa siempre el equipo de seguridad:
-# una excepción sin revisar es la forma más silenciosa de desactivar el gate.
+# Security configuration is always reviewed by the security team:
+# an unreviewed exception is the quietest way to disable the gate.
 /.security-baseline.yml  ${OWNER} @${GH_ORG}/security
 /.github/workflows/      ${OWNER} @${GH_ORG}/security
 COEOF
 
 emit "$TARGET/.pre-commit-config.yaml" <<PCEOF
-# El plan Team no incluye push protection en repos privados: este hook es la
-# única barrera antes de que un secreto llegue al servidor.
+# The Team plan does not include push protection on private repos: this hook is
+# the only barrier before a secret reaches the server.
 #
 #   pip install pre-commit && pre-commit install
 repos:
@@ -462,22 +462,22 @@ repos:
       - id: trailing-whitespace
 PCEOF
 
-if [ "$MODE" = "nuevo" ]; then
+if [ "$MODE" = "new" ]; then
   emit "$TARGET/README.md" <<RMEOF
 # ${REPO_NAME}
 
-## Seguridad
+## Security
 
-Este repositorio usa el [security baseline](https://github.com/${GH_ORG}/${BASELINE_REPO})
-de la organización.
+This repository uses the organization's
+[security baseline](https://github.com/${GH_ORG}/${BASELINE_REPO}).
 
-- El check **\`gate\`** es obligatorio para hacer merge. Bloquea a partir de
-  severidad \`${SEVERITY}\`.
-- Los hallazgos se publican como comentario en el pull request.
-- Las excepciones se declaran en \`.security-baseline.yml\` y **caducan siempre**.
-- Antes del primer commit: \`pip install pre-commit && pre-commit install\`.
+- The **\`gate\`** check is required to merge. It blocks from severity
+  \`${SEVERITY}\` upwards.
+- Findings are posted as a comment on the pull request.
+- Exceptions are declared in \`.security-baseline.yml\` and **always expire**.
+- Before the first commit: \`pip install pre-commit && pre-commit install\`.
 
-Ver [la guía de onboarding](https://github.com/${GH_ORG}/${BASELINE_REPO}/blob/main/docs/onboarding.md).
+See [the onboarding guide](https://github.com/${GH_ORG}/${BASELINE_REPO}/blob/main/docs/onboarding.md).
 RMEOF
 
   emit "$TARGET/.gitignore" <<GIEOF
@@ -497,49 +497,49 @@ fi
 
 # ------------------------------------------------------------------ 7. git
 
-if [ "$DRY_RUN" = "0" ] && [ "$MODE" = "nuevo" ]; then
+if [ "$DRY_RUN" = "0" ] && [ "$MODE" = "new" ]; then
   head1 "7 · Git"
-  if confirm "¿Inicializar el repositorio git?" "s"; then
+  if confirm "Initialize the git repository?" "y"; then
     (
       cd "$TARGET"
       git init -q -b main
       git add -A
-      git -c user.useConfigOnly=false commit -q -m "chore: adoptar el security baseline
+      git -c user.useConfigOnly=false commit -q -m "chore: adopt the security baseline
 
-Genera el llamador del baseline y la política del gate.
-Baseline: ${GH_ORG}/${BASELINE_REPO}@${BASELINE_REF}" || warn "Commit no realizado (configura git user.name/user.email)"
+Generates the baseline caller and the gate policy.
+Baseline: ${GH_ORG}/${BASELINE_REPO}@${BASELINE_REF}" || warn "Commit not made (configure git user.name/user.email)"
     )
-    ok "git inicializado en $TARGET"
+    ok "git initialized in $TARGET"
   fi
 
   if command -v gh >/dev/null 2>&1; then
-    if confirm "¿Crear el repositorio en GitHub con gh?" "n"; then
+    if confirm "Create the repository on GitHub with gh?" "n"; then
       (cd "$TARGET" && gh repo create "${GH_ORG}/${REPO_NAME}" --private --source=. --push) \
-        && ok "Creado en GitHub" || warn "No se pudo crear el repositorio remoto"
+        && ok "Created on GitHub" || warn "Could not create the remote repository"
     fi
   fi
 fi
 
-# ------------------------------------------------------------------ 8. cierre
+# ------------------------------------------------------------------ 8. wrap-up
 
-head1 "Hecho"
+head1 "Done"
 if [ "$DRY_RUN" = "1" ]; then
-  warn "No se ha escrito nada (--dry-run)."
+  warn "Nothing was written (--dry-run)."
   exit 0
 fi
 
 cat <<NEXT
-Siguiente:
+Next:
 
-  1. Revisa ${TARGET}/.github/workflows/ci.yml
-  2. Marca el check ${B}gate${R} como required en el ruleset de la rama main
+  1. Review ${TARGET}/.github/workflows/ci.yml
+  2. Mark the ${B}gate${R} check as required in the main branch ruleset
 NEXT
 
 if [ "$WANT_CD" = true ]; then
   cat <<CDNEXT
-  3. Crea el environment '${ENVIRONMENT}' con required reviewers
-  4. Añade la federated credential en Entra con subject exactamente:
+  3. Create the '${ENVIRONMENT}' environment with required reviewers
+  4. Add the federated credential in Entra with exactly this subject:
        ${B}repo:${GH_ORG}/${REPO_NAME}:environment:${ENVIRONMENT}${R}
-     ${DIM}Nunca con comodín: un subject amplio deja que un PR obtenga token de producción.${R}
+     ${DIM}Never with a wildcard: a broad subject lets a PR obtain a production token.${R}
 CDNEXT
 fi

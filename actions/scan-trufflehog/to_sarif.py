@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Normaliza la salida JSONL de TruffleHog a SARIF para que la consuma el gate."""
+"""Normalize TruffleHog JSONL output to SARIF so the gate can consume it."""
 import json
 import pathlib
 import sys
@@ -26,10 +26,10 @@ results = [
     {
         "ruleId": r.get("DetectorName", "verified-secret"),
         "level": "error",
-        # verificado contra el proveedor: es cierto por definición
+        # verified against the provider: true by definition
         "properties": {"severity": "critical"},
         "message": {
-            "text": f"Secreto VERIFICADO ({r.get('DetectorName')}) — rotar de inmediato"
+            "text": f"VERIFIED secret ({r.get('DetectorName')}) — rotate immediately"
         },
         "locations": [
             {
@@ -54,4 +54,4 @@ dst.write_text(
         indent=2,
     )
 )
-print(f"trufflehog: {len(results)} secreto(s) verificado(s)")
+print(f"trufflehog: {len(results)} verified secret(s)")

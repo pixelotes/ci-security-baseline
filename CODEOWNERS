@@ -1,5 +1,5 @@
-# Todo el baseline lo revisa seguridad: un cambio aquí llega a todos los repos
-# de la organización en el siguiente build.
+# Security reviews the whole baseline: a change here reaches every repo in the
+# organization on the next build.
 *                    @pixelotes
 /policy/             @pixelotes
 /actions/gate/       @pixelotes

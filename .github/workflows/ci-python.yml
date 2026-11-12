@@ -1,5 +1,5 @@
-# Muchos repos Python no tienen pyproject.toml en la raíz: los requirements
-# viven en subdirectorios. El módulo descubre ficheros; no asume rutas.
+# Many Python repos have no pyproject.toml at the root: the requirements
+# live in subdirectories. The module discovers files; it does not assume paths.
 name: baseline · python
 
 on:
@@ -36,18 +36,18 @@ jobs:
         with:
           python-version: ${{ inputs.python-version }}
           cache: pip
-      - name: Instalar dependencias (descubrimiento, no ruta fija)
+      - name: Install dependencies (discovery, not a fixed path)
         run: |
           set -euo pipefail
           if [ -f pyproject.toml ]; then
             pip install -e '.[dev]' 2>/dev/null || pip install -e . || true
           fi
-          # muchos repos del parque tienen requirements en subdirectorios
+          # many repos in the fleet have requirements in subdirectories
           while IFS= read -r req; do
             echo "→ $req"
             pip install -r "$req" || true
           done < <(find . -maxdepth 3 -name 'requirements*.txt' -not -path './.git/*')
-      - run: pytest -q || echo "::warning::sin tests o tests fallando"
+      - run: pytest -q || echo "::warning::no tests or tests failing"
 
   lint:
     needs: plan
@@ -66,8 +66,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # p/python incluye las reglas ex-bandit, que en el linter solo avisan
-      # y aquí sí cuentan para el gate.
+      # p/python includes the ex-bandit rules, which only warn in the linter
+      # and do count toward the gate here.
       - uses: pixelotes/ci-security-baseline/actions/scan-opengrep@v1
         with: { config: 'p/ci p/python p/secrets' }
 

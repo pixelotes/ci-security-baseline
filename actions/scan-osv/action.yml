@@ -1,20 +1,20 @@
 name: 'OSV-Scanner (SCA)'
 description: >
-  Vulnerabilidades de dependencias a partir de los lockfiles, con OSV-Scanner.
-  Binario único con checksum fijado, sin base de datos que cachear. Emite SARIF
-  y nunca falla por sí mismo: decide el gate.
+  Dependency vulnerabilities from the lockfiles, using OSV-Scanner. Single
+  binary with a pinned checksum, no database to cache. Emits SARIF and never
+  fails on its own: the gate decides.
 
-  Privacidad: por defecto consulta la API de osv.dev con nombres y versiones de
-  paquetes (no con tu código). En repos con dependencias internas sensibles,
-  usa offline: true.
+  Privacy: by default it queries the osv.dev API with package names and
+  versions (not your code). In repos with sensitive internal dependencies,
+  use offline: true.
 inputs:
   offline:
-    description: 'Descarga las bases de datos y consulta en local (más lento)'
+    description: 'Downloads the databases and queries locally (slower)'
     default: 'false'
 runs:
   using: composite
   steps:
-    - name: Instalar OSV-Scanner (versión y checksum fijados)
+    - name: Install OSV-Scanner (pinned version and checksum)
       shell: bash
       env:
         VERSION: v2.7.1
@@ -35,7 +35,7 @@ runs:
         if [ "$OFFLINE" = "true" ]; then
           FLAGS+=(--offline-vulnerabilities --download-offline-databases)
         fi
-        # Sale con código 1 cuando hay hallazgos: el corte lo pone el gate.
+        # Exits with code 1 when there are findings: the gate sets the cut-off.
         "$RUNNER_TEMP/bin/osv-scanner" scan source -r "${FLAGS[@]}" \
           --format sarif --output-file reports/osv.sarif . || true
     - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

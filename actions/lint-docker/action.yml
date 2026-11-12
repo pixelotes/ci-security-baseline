@@ -1,5 +1,5 @@
 name: 'Lint Dockerfile'
-description: 'hadolint sobre todos los Dockerfile del repo. Emite SARIF.'
+description: 'hadolint over every Dockerfile in the repo. Emits SARIF.'
 runs:
   using: composite
   steps:

@@ -1,8 +1,8 @@
-name: 'TruffleHog (historial, solo verificados)'
+name: 'TruffleHog (history, verified only)'
 description: >
-  Historial completo con --only-verified: comprueba la credencial contra el
-  proveedor. Un hallazgo verificado es cierto por definición, así que este sí
-  bloquea y abre incidente. Va en la nocturna, no en el PR.
+  Full history with --only-verified: it checks the credential against the
+  provider. A verified finding is true by definition, so this one does block
+  and opens an incident. It runs in the nightly, not in the PR.
 runs:
   using: composite
   steps:

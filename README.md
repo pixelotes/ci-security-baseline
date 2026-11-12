@@ -162,7 +162,7 @@ binaries pinned by checksum):
   every push. It is informational: it never fails and the gate ignores it.
   Tests, vendored and generated code are excluded by default (`exclude` input).
   Ruff and golangci-lint also enable their complexity and simplification rules
-  (`C90`, `SIM`, `gocyclo`, `gocognit`, `dupl`, `gocritic`, `revive`), which
+  (`C90`, `SIM`, `gocyclo`, `gocognit`, `dupl`, `gocritic`), which
   show up as non-blocking lint warnings.
 - **Trivy** stays where nothing else covers it: IaC misconfiguration, image
   scanning and the nightly full scan (including licenses).
@@ -268,9 +268,6 @@ bash -n new-repo.sh            # generator syntax
 
 `selfcheck.yml` applies the baseline to this very repository: if the gate does
 not pass here, it is not ready for anyone else.
-
-The scripts, the `docs/` folder and the gate's messages are currently in
-Spanish.
 
 ## License
 

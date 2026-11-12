@@ -1,12 +1,12 @@
-name: 'govulncheck (SCA con alcanzabilidad, Go)'
+name: 'govulncheck (SCA with reachability, Go)'
 description: >
-  Solo avisa de vulnerabilidades en funciones que el código realmente alcanza,
-  así que apenas da falsos positivos. Requiere el toolchain de Go en el job
-  (actions/setup-go) y compila el módulo. Emite SARIF y nunca falla por sí
-  mismo: decide el gate.
+  Only reports vulnerabilities in functions the code actually reaches, so it
+  rarely gives false positives. Requires the Go toolchain in the job
+  (actions/setup-go) and compiles the module. Emits SARIF and never fails on
+  its own: the gate decides.
 inputs:
   version:
-    description: 'Versión de govulncheck'
+    description: 'govulncheck version'
     default: 'v1.9.0'
 runs:
   using: composite
@@ -17,9 +17,9 @@ runs:
       run: |
         set -euo pipefail
         mkdir -p reports
-        # go install verifica el módulo contra sum.golang.org
+        # go install verifies the module against sum.golang.org
         GOBIN="$RUNNER_TEMP/bin" go install "golang.org/x/vuln/cmd/govulncheck@${VERSION}"
-        # con -format sarif el código de salida es 0 aunque haya hallazgos
+        # with -format sarif the exit code is 0 even when there are findings
         "$RUNNER_TEMP/bin/govulncheck" -format sarif ./... > reports/govulncheck.sarif || true
     - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       if: always()

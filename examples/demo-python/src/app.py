@@ -1,19 +1,19 @@
-"""Repo de demostración: contiene hallazgos plantados a propósito.
+"""Demo repo: contains findings planted on purpose.
 
-NO copiar nada de aquí a código real.
+Do NOT copy anything from here into real code.
 """
 import hashlib
 import os
 import subprocess
 
-# hallazgo esperado: secreto embebido (gitleaks / semgrep)
+# expected finding: embedded secret (gitleaks / semgrep)
 API_TOKEN = "acme_sk_0123456789abcdef0123456789abcdef"
 
-# hallazgo esperado: hash débil (semgrep p/python)
+# expected finding: weak hash (semgrep p/python)
 def huella(dato: str) -> str:
     return hashlib.md5(dato.encode()).hexdigest()
 
-# hallazgo esperado: shell=True con entrada variable (semgrep p/python)
+# expected finding: shell=True with variable input (semgrep p/python)
 def listar(ruta: str) -> str:
     return subprocess.check_output(f"ls {ruta}", shell=True).decode()
 

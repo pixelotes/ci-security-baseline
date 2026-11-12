@@ -1,5 +1,5 @@
 name: 'Lint JVM'
-description: 'Checkstyle, PMD y Spotless en Maven; detekt y ktlint en Kotlin. No bloqueante.'
+description: 'Checkstyle, PMD and Spotless for Maven; detekt and ktlint for Kotlin. Non-blocking.'
 inputs:
   build-tool: { description: 'maven | gradle', default: 'maven' }
 runs:
@@ -8,14 +8,14 @@ runs:
     - shell: bash
       run: |
         set -euo pipefail
-        # No todos los repos traen wrapper: se usa si está, y si no el binario
-        # del runner. Asumir ./mvnw deja fuera a buena parte del parque.
+        # Not every repo ships a wrapper: use it if present, otherwise the
+        # runner's binary. Assuming ./mvnw would leave out a large part of the fleet.
         if [ "${{ inputs.build-tool }}" = "maven" ]; then
           MVN=mvn; [ -x ./mvnw ] && MVN=./mvnw
           "$MVN" -B -q checkstyle:check pmd:check spotless:check || \
-            echo "::warning::lint JVM con hallazgos — revisar (no bloquea el merge)"
+            echo "::warning::JVM lint has findings — review (does not block the merge)"
         else
           GRADLE=gradle; [ -x ./gradlew ] && GRADLE=./gradlew
           "$GRADLE" --no-daemon detekt ktlintCheck || \
-            echo "::warning::lint Kotlin con hallazgos — revisar (no bloquea el merge)"
+            echo "::warning::Kotlin lint has findings — review (does not block the merge)"
         fi

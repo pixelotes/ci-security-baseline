@@ -1,5 +1,5 @@
-# Los tres gestores suelen convivir en un parque grande, así que el módulo
-# detecta el lockfile en vez de imponer uno.
+# All three package managers usually coexist in a large fleet, so the module
+# detects the lockfile instead of imposing one.
 name: baseline · node
 
 on:
@@ -45,7 +45,7 @@ jobs:
         with:
           node-version: ${{ inputs.node-version }}
           cache: ${{ needs.detect.outputs.pm }}
-      - name: Instalar dependencias
+      - name: Install dependencies
         run: |
           case "${{ needs.detect.outputs.pm }}" in
             yarn) corepack enable && yarn install --immutable ;;

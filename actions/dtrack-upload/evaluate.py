@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Evalúa el resultado de Dependency-Track y decide si el CD continúa.
+"""Evaluate the Dependency-Track result and decide whether CD continues.
 
-Solo cuentan los hallazgos NO suprimidos: una supresión en DT lleva
-justificación, responsable e histórico, que es exactamente lo que le falta a
-un umbral plano de Trivy.
+Only NON-suppressed findings count: a suppression in DT carries a
+justification, an owner and a history, which is exactly what a flat Trivy
+threshold lacks.
 """
 import argparse
 import json
@@ -44,7 +44,7 @@ def main() -> int:
     lines.append(" | ".join(f"{s.title()}: {counts.get(s, 0)}" for s in ORDER[:4]))
     lines.append("")
     if violations:
-        lines.append(f"**{len(violations)} violación(es) de política activa(s)**")
+        lines.append(f"**{len(violations)} active policy violation(s)**")
         for v in violations[:20]:
             comp = v.get("component", {})
             lines.append(
@@ -64,11 +64,11 @@ def main() -> int:
     blocking = sum(counts.get(s, 0) for s in ORDER[: limit + 1])
 
     if violations:
-        print(f"dtrack: {len(violations)} violación(es) de política — se detiene la publicación",
+        print(f"dtrack: {len(violations)} policy violation(s) — stopping the publication",
               file=sys.stderr)
         return 1
     if blocking:
-        print(f"dtrack: {blocking} hallazgo(s) >= {threshold} sin suprimir — se detiene la publicación",
+        print(f"dtrack: {blocking} unsuppressed finding(s) >= {threshold} — stopping the publication",
               file=sys.stderr)
         return 1
     return 0

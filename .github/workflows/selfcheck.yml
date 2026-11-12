@@ -1,5 +1,5 @@
-# Ola 0 del despliegue: el baseline se aplica a sí mismo antes de pedírselo
-# a nadie. Si el gate no puede pasar aquí, no está listo para el resto de la organización.
+# Wave 0 of the rollout: the baseline applies itself before asking anyone else
+# to. If the gate cannot pass here, it is not ready for the rest of the organization.
 name: selfcheck
 
 on:
@@ -20,7 +20,7 @@ jobs:
       - run: yamllint -d relaxed .github/ actions/ policy/
 
   probar-gate:
-    name: tests del gate
+    name: gate tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

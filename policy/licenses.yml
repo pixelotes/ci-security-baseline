@@ -1,9 +1,9 @@
-# Política de licencias. Se aplica en dos sitios:
-#   - Trivy en el PR (aviso rápido sobre lo que introduce el cambio)
-#   - Dependency-Track de forma continua (sistema de registro y evidencia)
+# License policy. It is applied in two places:
+#   - Trivy on the PR (quick warning about what the change introduces)
+#   - Dependency-Track continuously (system of record and evidence)
 #
-# Azure Artifacts no evalúa licencias: es la tercera capacidad de Xray que
-# hay que reponer explícitamente al migrar.
+# Azure Artifacts does not evaluate licenses: it is the third Xray capability
+# that has to be replaced explicitly when migrating.
 
 permitidas:
   - Apache-2.0
@@ -17,17 +17,17 @@ permitidas:
   - Unlicense
   - PSF-2.0
 
-revisar:            # requieren aprobación caso por caso
+revisar:            # require case-by-case approval
   - LGPL-2.1
   - LGPL-3.0
   - CDDL-1.0
   - EPL-1.0
 
-prohibidas:         # bloquean la publicación en CD
+prohibidas:         # block publication in CD
   - AGPL-3.0
   - GPL-2.0
   - GPL-3.0
   - SSPL-1.0
   - BUSL-1.1
   - Commons-Clause
-  - NONE             # sin licencia declarada
+  - NONE             # no declared license

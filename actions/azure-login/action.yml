@@ -1,15 +1,16 @@
-name: 'Login en Azure por OIDC'
+name: 'Azure login via OIDC'
 description: >
-  Autenticación federada contra Entra ID. No hay secretos inyectados en el
-  repositorio: el perímetro completo es el subject de la federated credential,
-  que debe estar acotado por environment (repo:ORG/REPO:environment:prod) y
-  nunca con comodín — si no, un workflow de un PR obtiene token de producción.
+  Federated authentication against Entra ID. No secrets are injected into the
+  repository: the whole perimeter is the subject of the federated credential,
+  which must be scoped to an environment (repo:ORG/REPO:environment:prod) and
+  never use a wildcard — otherwise a workflow triggered by a PR gets a
+  production token.
 inputs:
   client-id:       { required: true, description: 'App registration' }
-  tenant-id:       { required: true, description: 'Tenant de Entra ID' }
-  subscription-id: { required: true, description: 'Suscripción' }
-  keyvault:        { required: false, default: '', description: 'Key Vault del que leer secretos' }
-  secrets:         { required: false, default: '', description: 'Nombres separados por coma' }
+  tenant-id:       { required: true, description: 'Entra ID tenant' }
+  subscription-id: { required: true, description: 'Subscription' }
+  keyvault:        { required: false, default: '', description: 'Key Vault to read secrets from' }
+  secrets:         { required: false, default: '', description: 'Comma-separated names' }
 runs:
   using: composite
   steps:

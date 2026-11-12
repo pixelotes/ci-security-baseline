@@ -1,12 +1,12 @@
-# Reglas propias del baseline. Complementan a los rulesets públicos
-# (p/ci, p/secrets y el del lenguaje), no los sustituyen.
+# The baseline's own rules. They complement the public rulesets
+# (p/ci, p/secrets and the language one), they do not replace them.
 rules:
   - id: baseline-azure-connection-string
     languages: [generic]
     severity: ERROR
     message: >
-      Cadena de conexión de Azure embebida en el código. Los secretos viven en
-      Key Vault y se recuperan por OIDC; no se inyectan en el repositorio.
+      Azure connection string embedded in the code. Secrets live in Key Vault
+      and are retrieved via OIDC; they are not injected into the repository.
     metadata:
       security-severity: '9.1'
       category: security
@@ -16,9 +16,9 @@ rules:
     languages: [yaml]
     severity: ERROR
     message: >
-      Federated credential con subject demasiado amplio. Debe acotarse por
-      environment (repo:ORG/REPO:environment:prod); con comodín, un workflow
-      disparado por un pull request obtiene token de producción.
+      Federated credential with an overly broad subject. It must be scoped to
+      an environment (repo:ORG/REPO:environment:prod); with a wildcard, a
+      workflow triggered by a pull request gets a production token.
     metadata:
       security-severity: '8.8'
       category: security
@@ -28,9 +28,9 @@ rules:
     languages: [yaml]
     severity: WARNING
     message: >
-      id-token write en un workflow disparable por pull_request. Sin ese
-      permiso no hay token OIDC posible: es la defensa en profundidad que
-      protege Key Vault aunque Entra esté mal configurado.
+      id-token write in a workflow that pull_request can trigger. Without that
+      permission no OIDC token is possible: it is the defense in depth that
+      protects Key Vault even if Entra is misconfigured.
     metadata:
       security-severity: '6.5'
       category: security
@@ -42,9 +42,9 @@ rules:
     languages: [yaml]
     severity: WARNING
     message: >
-      Action de terceros fijada por tag. Un tag es mutable: un compromiso de la
-      cuenta upstream se propaga a todos los repos en el siguiente build. Fija
-      por SHA completo (bin/pin-actions.sh lo hace).
+      Third-party action pinned by tag. A tag is mutable: a compromise of the
+      upstream account propagates to every repo on the next build. Pin by full
+      SHA (bin/pin-actions.sh does it).
     metadata:
       security-severity: '5.9'
       category: supply-chain

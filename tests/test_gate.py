@@ -1,4 +1,4 @@
-"""Tests del gate: es la pieza que decide, así que es la que se prueba."""
+"""Gate tests: it is the piece that decides, so it is the one under test."""
 import importlib.util
 import json
 import subprocess
@@ -11,7 +11,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location("gate", ROOT / "actions" / "gate" / "gate.py")
 gate = importlib.util.module_from_spec(spec)
-sys.modules["gate"] = gate   # dataclasses lo necesita registrado
+sys.modules["gate"] = gate   # dataclasses needs it registered
 spec.loader.exec_module(gate)
 
 
@@ -58,52 +58,52 @@ def run(ws, args=()):
     )
 
 
-# ---------------------------------------------------------------- severidad
+# ---------------------------------------------------------------- severity
 
-def test_cvss_manda_sobre_el_level():
+def test_cvss_wins_over_level():
     smap = {"levels": {"warning": "medium"}}
     sev = gate.normalize_severity("trivy", "CVE-1", "warning", {"security-severity": "9.4"}, smap)
     assert sev == "critical"
 
 
-def test_override_por_herramienta_manda_sobre_cvss():
+def test_per_tool_override_wins_over_cvss():
     smap = {"overrides": {"trufflehog": {"*": "critical"}}}
     sev = gate.normalize_severity("trufflehog", "AWS", "note", {"security-severity": "1.0"}, smap)
-    assert sev == "critical", "un secreto verificado es crítico pase lo que pase"
+    assert sev == "critical", "a verified secret is critical no matter what"
 
 
-def test_level_como_ultimo_recurso():
+def test_level_is_the_last_resort():
     sev = gate.normalize_severity("semgrep", "r", "error", {}, {})
     assert sev == "high"
 
 
-# ---------------------------------------------------------------- decisión
+# ---------------------------------------------------------------- decision
 
-def test_bloquea_por_encima_del_umbral(workspace):
+def test_blocks_above_the_threshold(workspace):
     write_sarif(workspace, "trivy", sarif("trivy", [result("CVE-1", sev=9.8)]))
     (workspace / ".security-baseline.yml").write_text("version: 1\ngate:\n  severity: high\n")
     r = run(workspace)
     assert r.returncode == 1
-    assert "bloquean este PR" in (workspace / "reports" / "gate-summary.md").read_text()
+    assert "block this PR" in (workspace / "reports" / "gate-summary.md").read_text()
 
 
-def test_no_bloquea_por_debajo_del_umbral(workspace):
+def test_does_not_block_below_the_threshold(workspace):
     write_sarif(workspace, "trivy", sarif("trivy", [result("CVE-2", sev=5.0)]))
     (workspace / ".security-baseline.yml").write_text("version: 1\ngate:\n  severity: high\n")
     assert run(workspace).returncode == 0
 
 
-def test_sin_hallazgos_pasa(workspace):
+def test_no_findings_passes(workspace):
     write_sarif(workspace, "semgrep", sarif("semgrep", []))
     (workspace / ".security-baseline.yml").write_text("version: 1\n")
     assert run(workspace).returncode == 0
 
 
-# ---------------------------------------------------------------- excepciones
+# ---------------------------------------------------------------- exceptions
 
-def test_excepcion_vigente_desbloquea(workspace):
+def test_active_exception_unblocks(workspace):
     write_sarif(workspace, "trivy", sarif("trivy", [result("CVE-3", sev=9.8, path="pom.xml")]))
-    futuro = (date.today() + timedelta(days=30)).isoformat()
+    future = (date.today() + timedelta(days=30)).isoformat()
     (workspace / ".security-baseline.yml").write_text(
         "version: 1\n"
         "gate:\n  severity: high\n"
@@ -111,94 +111,94 @@ def test_excepcion_vigente_desbloquea(workspace):
         "  - id: CVE-3\n"
         "    tool: trivy\n"
         "    scope: 'pom.xml'\n"
-        "    reason: 'no explotable'\n"
-        "    owner: '@equipo'\n"
-        f"    expires: '{futuro}'\n"
+        "    reason: 'not exploitable'\n"
+        "    owner: '@team'\n"
+        f"    expires: '{future}'\n"
     )
     assert run(workspace).returncode == 0
 
 
-def test_excepcion_vencida_hace_fallar_el_gate(workspace):
+def test_expired_exception_fails_the_gate(workspace):
     write_sarif(workspace, "trivy", sarif("trivy", [result("CVE-4", sev=9.8, path="pom.xml")]))
-    pasado = (date.today() - timedelta(days=1)).isoformat()
+    past = (date.today() - timedelta(days=1)).isoformat()
     (workspace / ".security-baseline.yml").write_text(
         "version: 1\ngate:\n  severity: high\n"
-        "exceptions:\n  - id: CVE-4\n    owner: '@equipo'\n"
-        f"    expires: '{pasado}'\n"
+        "exceptions:\n  - id: CVE-4\n    owner: '@team'\n"
+        f"    expires: '{past}'\n"
     )
     r = run(workspace)
     assert r.returncode == 1
-    assert "venció" in (workspace / "reports" / "gate-summary.md").read_text()
+    assert "expired" in (workspace / "reports" / "gate-summary.md").read_text()
 
 
-def test_excepcion_sin_caducidad_es_error_de_configuracion(workspace):
+def test_exception_without_expiry_is_a_configuration_error(workspace):
     write_sarif(workspace, "trivy", sarif("trivy", [result("CVE-5", sev=2.0)]))
     (workspace / ".security-baseline.yml").write_text(
         "version: 1\ngate:\n  severity: high\n"
-        "exceptions:\n  - id: CVE-5\n    owner: '@equipo'\n"
+        "exceptions:\n  - id: CVE-5\n    owner: '@team'\n"
     )
     r = run(workspace)
-    assert r.returncode == 1, "sin expires el gate debe fallar aunque no haya bloqueantes"
-    assert "obligatorio" in (workspace / "reports" / "gate-summary.md").read_text()
+    assert r.returncode == 1, "without expires the gate must fail even with no blocking findings"
+    assert "mandatory" in (workspace / "reports" / "gate-summary.md").read_text()
 
 
-def test_excepcion_respeta_el_scope(workspace):
-    write_sarif(workspace, "trivy", sarif("trivy", [result("CVE-6", sev=9.8, path="src/Otro.java")]))
-    futuro = (date.today() + timedelta(days=30)).isoformat()
+def test_exception_respects_the_scope(workspace):
+    write_sarif(workspace, "trivy", sarif("trivy", [result("CVE-6", sev=9.8, path="src/Other.java")]))
+    future = (date.today() + timedelta(days=30)).isoformat()
     (workspace / ".security-baseline.yml").write_text(
         "version: 1\ngate:\n  severity: high\n"
         "exceptions:\n  - id: CVE-6\n    scope: 'pom.xml'\n    owner: '@e'\n"
-        f"    expires: '{futuro}'\n"
+        f"    expires: '{future}'\n"
     )
-    assert run(workspace).returncode == 1, "el scope no casa: no debe aplicarse la excepción"
+    assert run(workspace).returncode == 1, "the scope does not match: the exception must not apply"
 
 
-# ---------------------------------------------------------------- fecha de corte
+# ---------------------------------------------------------------- cutoff date
 
-def test_cutoff_degrada_lo_antiguo_a_aviso(workspace):
+def test_cutoff_downgrades_old_findings_to_warnings(workspace):
     subprocess.run(["git", "init", "-q", "-b", "main"], cwd=workspace, check=True)
     subprocess.run(["git", "config", "user.email", "t@t"], cwd=workspace, check=True)
     subprocess.run(["git", "config", "user.name", "t"], cwd=workspace, check=True)
-    (workspace / "viejo.py").write_text("\n".join(f"linea {i}" for i in range(20)))
+    (workspace / "old.py").write_text("\n".join(f"line {i}" for i in range(20)))
     subprocess.run(["git", "add", "-A"], cwd=workspace, check=True)
     subprocess.run(
-        ["git", "commit", "-q", "-m", "inicial", "--date", "2020-01-01T00:00:00"],
+        ["git", "commit", "-q", "-m", "initial", "--date", "2020-01-01T00:00:00"],
         cwd=workspace, check=True,
         env={"GIT_AUTHOR_DATE": "2020-01-01T00:00:00", "GIT_COMMITTER_DATE": "2020-01-01T00:00:00",
              "PATH": "/usr/bin:/bin", "HOME": str(workspace)},
     )
     write_sarif(workspace, "semgrep",
-                sarif("semgrep", [result("r1", sev=9.9, path="viejo.py", line=3)]))
+                sarif("semgrep", [result("r1", sev=9.9, path="old.py", line=3)]))
     (workspace / ".security-baseline.yml").write_text(
         "version: 1\ngate:\n  severity: high\n  cutoff: '2026-01-01'\n"
     )
     r = run(workspace)
     summary = (workspace / "reports" / "gate-summary.md").read_text()
     assert r.returncode == 0, summary
-    assert "anteriores a la fecha de corte" in summary
+    assert "before the cutoff date" in summary
 
 
-def test_sin_cutoff_lo_antiguo_tambien_bloquea(workspace):
+def test_without_cutoff_old_findings_also_block(workspace):
     write_sarif(workspace, "semgrep", sarif("semgrep", [result("r2", sev=9.9)]))
     (workspace / ".security-baseline.yml").write_text("version: 1\ngate:\n  severity: high\n")
     assert run(workspace).returncode == 1
 
 
-# ---------------------------------------------------------------- robustez
+# ---------------------------------------------------------------- robustness
 
-def test_sarif_corrupto_no_tumba_el_gate(workspace):
-    (workspace / "reports" / "roto.sarif").write_text("{ esto no es json")
+def test_corrupt_sarif_does_not_crash_the_gate(workspace):
+    (workspace / "reports" / "broken.sarif").write_text("{ this is not json")
     write_sarif(workspace, "trivy", sarif("trivy", [result("CVE-7", sev=1.0)]))
     (workspace / ".security-baseline.yml").write_text("version: 1\n")
     assert run(workspace).returncode == 0
 
 
-def test_sin_fichero_de_configuracion_usa_defectos(workspace):
+def test_missing_config_file_uses_defaults(workspace):
     write_sarif(workspace, "trivy", sarif("trivy", [result("CVE-8", sev=9.9)]))
-    assert run(workspace).returncode == 1, "por defecto bloquea high y superior"
+    assert run(workspace).returncode == 1, "by default it blocks high and above"
 
 
-def test_resultado_json_es_consumible(workspace):
+def test_json_result_is_consumable(workspace):
     write_sarif(workspace, "trivy", sarif("trivy", [result("CVE-9", sev=9.9)]))
     (workspace / ".security-baseline.yml").write_text("version: 1\n")
     run(workspace)
@@ -209,13 +209,13 @@ def test_resultado_json_es_consumible(workspace):
 
 
 def test_overrides_match_the_tool_name_loosely():
-    """Los SARIF traen "Semgrep OSS", "Opengrep OSS"...; la clave es `semgrep`."""
+    """SARIF files carry "Semgrep OSS", "Opengrep OSS"...; the key is `semgrep`."""
     smap = {"overrides": {"semgrep": {"*.security.*": "high"},
                           "opengrep": {"*.security.*": "high"}}}
     for tool in ("Semgrep OSS", "SEMGREP", "Opengrep OSS"):
         sev = gate.normalize_severity(tool, "python.lang.security.x", "note", {}, smap)
         assert sev == "high", tool
-    # una herramienta sin override sigue el camino normal
+    # a tool without an override follows the normal path
     assert gate.normalize_severity("Trivy", "python.lang.security.x", "note", {}, smap) == "low"
 
 
@@ -228,7 +228,7 @@ def test_shipped_severity_map_covers_opengrep_like_semgrep():
 
 
 def test_duplicate_results_are_collapsed(tmp_path):
-    """osv-scanner emite cada resultado dos veces."""
+    """osv-scanner emits every result twice."""
     res = {"ruleId": "CVE-2020-1747", "level": "warning",
            "message": {"text": "pyyaml@5.3 is vulnerable"},
            "locations": [{"physicalLocation": {

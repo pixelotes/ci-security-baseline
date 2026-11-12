@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
-gate.py — agregador de hallazgos del security baseline.
+gate.py — findings aggregator of the security baseline.
 
-Lee todos los SARIF producidos por los escáneres, normaliza la severidad entre
-herramientas, aplica las excepciones declaradas en .security-baseline.yml y la
-fecha de corte, y decide si el pull request se bloquea.
+Reads every SARIF file produced by the scanners, normalizes severity across
+tools, applies the exceptions declared in .security-baseline.yml and the
+cutoff date, and decides whether the pull request is blocked.
 
-Es el único punto del pipeline que decide. Los escáneres solo reportan.
+It is the only point in the pipeline that decides. Scanners only report.
 
-Salida:
-  - reports/gate-summary.md   resumen en markdown (comentario del PR + job summary)
-  - reports/gate-result.json  resultado estructurado (para el backend central)
+Output:
+  - reports/gate-summary.md   markdown summary (PR comment + job summary)
+  - reports/gate-result.json  structured result (for a central backend)
   - exit 0 / 1
 """
 
@@ -29,12 +29,12 @@ from pathlib import Path
 try:
     import yaml
 except ImportError:
-    sys.exit("gate: falta PyYAML (pip install pyyaml)")
+    sys.exit("gate: PyYAML is missing (pip install pyyaml)")
 
 SEVERITIES = ["critical", "high", "medium", "low", "info"]
 RANK = {s: i for i, s in enumerate(SEVERITIES)}
 
-# ---------------------------------------------------------------- modelo
+# ---------------------------------------------------------------- model
 
 
 @dataclass
@@ -45,10 +45,10 @@ class Finding:
     message: str
     path: str = ""
     line: int = 0
-    # estado asignado por el gate
+    # status assigned by the gate
     status: str = "blocking"          # blocking | excepted | pre-cutoff | below-threshold
     note: str = ""
-    introduced: str = ""              # fecha ISO según git blame, si se pudo calcular
+    introduced: str = ""              # ISO date from git blame, when it could be computed
 
     @property
     def key(self) -> str:
@@ -74,7 +74,7 @@ class Config:
         )
 
 
-# ---------------------------------------------------------------- severidad
+# ---------------------------------------------------------------- severity
 
 
 def load_severity_map(path: Path) -> dict:
@@ -84,11 +84,11 @@ def load_severity_map(path: Path) -> dict:
 
 
 def normalize_severity(tool: str, rule_id: str, level: str, props: dict, smap: dict) -> str:
-    """Cada herramienta usa su propia escala. Esto las lleva a una sola."""
-    # El nombre que pone cada herramienta en su SARIF no es la clave de la
-    # tabla ("Semgrep OSS", "Opengrep OSS", "Checkov"...), así que se compara
-    # sin distinguir mayúsculas y por contención: la clave `semgrep` casa con
-    # "Semgrep OSS". Con la comparación exacta los overrides nunca aplicaban.
+    """Each tool uses its own scale. This brings them all to a single one."""
+    # The name each tool puts in its SARIF is not the key of the table
+    # ("Semgrep OSS", "Opengrep OSS", "Checkov"...), so it is compared
+    # case-insensitively and by containment: the key `semgrep` matches
+    # "Semgrep OSS". With an exact comparison the overrides never applied.
     tool_l = tool.lower()
     for key, overrides in (smap.get("overrides") or {}).items():
         if str(key).lower() not in tool_l:
@@ -97,7 +97,7 @@ def normalize_severity(tool: str, rule_id: str, level: str, props: dict, smap: d
             if fnmatch.fnmatch(rule_id, pattern):
                 return sev.lower()
 
-    # CVSS embebido: es la señal más fiable cuando existe (trivy, grype, semgrep)
+    # Embedded CVSS: the most reliable signal when present (trivy, grype, semgrep)
     raw_cvss = props.get("security-severity")
     if raw_cvss is not None:
         try:
@@ -114,7 +114,7 @@ def normalize_severity(tool: str, rule_id: str, level: str, props: dict, smap: d
             if score > 0:
                 return "low"
 
-    # etiqueta textual propia de la herramienta
+    # the tool's own textual label
     tag = str(props.get("severity") or props.get("problem.severity") or "").lower()
     if tag in RANK:
         return tag
@@ -130,7 +130,7 @@ def parse_sarif(path: Path, smap: dict) -> list[Finding]:
     try:
         doc = json.loads(path.read_text())
     except (json.JSONDecodeError, OSError) as exc:
-        print(f"gate: aviso — no se pudo leer {path.name}: {exc}", file=sys.stderr)
+        print(f"gate: warning — could not read {path.name}: {exc}", file=sys.stderr)
         return []
 
     findings: list[Finding] = []
@@ -139,7 +139,7 @@ def parse_sarif(path: Path, smap: dict) -> list[Finding]:
         driver = ((run.get("tool") or {}).get("driver") or {})
         tool = driver.get("name") or path.stem
 
-        # las reglas traen metadatos que los resultados no repiten
+        # rules carry metadata that results do not repeat
         rules: dict[str, dict] = {}
         for rule in driver.get("rules") or []:
             if rule.get("id"):
@@ -169,8 +169,8 @@ def parse_sarif(path: Path, smap: dict) -> list[Finding]:
                 path=loc_path.removeprefix("file://").lstrip("/"),
                 line=loc_line,
             )
-            # Algunos escáneres (osv-scanner) emiten cada resultado dos veces:
-            # sin esto el conteo y la tabla del PR salen inflados.
+            # Some scanners (osv-scanner) emit every result twice: without
+            # this the count and the PR table come out inflated.
             ident = (finding.tool, finding.rule_id, finding.path, finding.line, finding.message)
             if ident in seen:
                 continue
@@ -179,13 +179,13 @@ def parse_sarif(path: Path, smap: dict) -> list[Finding]:
     return findings
 
 
-# ---------------------------------------------------------------- políticas
+# ---------------------------------------------------------------- policies
 
 
 def match_exception(f: Finding, exc: dict) -> bool:
     if str(exc.get("id", "")) not in ("", f.rule_id):
-        # también se admite el CVE dentro del mensaje (trivy lo pone en el ruleId,
-        # pero otras herramientas lo dejan solo en el texto)
+        # the CVE is also accepted inside the message (trivy puts it in the ruleId,
+        # but other tools leave it only in the text)
         if str(exc.get("id")) not in f.message:
             return False
     tool = exc.get("tool")
@@ -198,7 +198,7 @@ def match_exception(f: Finding, exc: dict) -> bool:
 
 
 def apply_exceptions(findings: list[Finding], cfg: Config) -> list[str]:
-    """Devuelve la lista de errores de configuración encontrados."""
+    """Return the list of configuration errors found."""
     problems: list[str] = []
     today = date.today()
 
@@ -206,24 +206,24 @@ def apply_exceptions(findings: list[Finding], cfg: Config) -> list[str]:
         where = exc.get("id") or exc.get("scope") or f"#{i}"
         expires = exc.get("expires")
         if not expires:
-            problems.append(f"excepción `{where}` sin campo `expires` — es obligatorio")
+            problems.append(f"exception `{where}` has no `expires` field — it is mandatory")
             continue
         if not exc.get("owner"):
-            problems.append(f"excepción `{where}` sin `owner`")
+            problems.append(f"exception `{where}` has no `owner`")
         try:
             exp = datetime.strptime(str(expires), "%Y-%m-%d").date()
         except ValueError:
-            problems.append(f"excepción `{where}` con fecha `{expires}` no válida (YYYY-MM-DD)")
+            problems.append(f"exception `{where}` has an invalid date `{expires}` (YYYY-MM-DD)")
             continue
         if exp < today:
             problems.append(
-                f"excepción `{where}` venció el {exp.isoformat()} — renuévala o corrige el hallazgo"
+                f"exception `{where}` expired on {exp.isoformat()} — renew it or fix the finding"
             )
             continue
         for f in findings:
             if f.status == "blocking" and match_exception(f, exc):
                 f.status = "excepted"
-                f.note = f"excepción de {exc.get('owner')} hasta {exp.isoformat()}"
+                f.note = f"exception by {exc.get('owner')} until {exp.isoformat()}"
     return problems
 
 
@@ -247,18 +247,18 @@ def blame_date(repo: Path, path: str, line: int) -> str:
 
 
 def apply_cutoff(findings: list[Finding], cfg: Config, repo: Path) -> None:
-    """Lo introducido antes de la fecha de corte se degrada a aviso.
+    """Anything introduced before the cutoff date is downgraded to a warning.
 
-    Sin esto, aplicar el gate de golpe sobre un parque con años de deuda
-    bloquea todos los PRs la primera semana y alguien acaba desactivando
-    el required check.
+    Without this, applying the gate all at once to an estate with years of
+    debt blocks every PR in the first week and someone ends up disabling
+    the required check.
     """
     if not cfg.cutoff:
         return
     try:
         cutoff = datetime.strptime(cfg.cutoff, "%Y-%m-%d").date()
     except ValueError:
-        print(f"gate: aviso — cutoff `{cfg.cutoff}` no válido, se ignora", file=sys.stderr)
+        print(f"gate: warning — cutoff `{cfg.cutoff}` is invalid, ignoring it", file=sys.stderr)
         return
 
     for f in findings:
@@ -267,7 +267,7 @@ def apply_cutoff(findings: list[Finding], cfg: Config, repo: Path) -> None:
         f.introduced = blame_date(repo, f.path, f.line)
         if f.introduced and date.fromisoformat(f.introduced) < cutoff:
             f.status = "pre-cutoff"
-            f.note = f"introducido el {f.introduced}, anterior al corte {cutoff.isoformat()}"
+            f.note = f"introduced on {f.introduced}, before the cutoff {cutoff.isoformat()}"
 
 
 def apply_threshold(findings: list[Finding], cfg: Config) -> None:
@@ -277,7 +277,7 @@ def apply_threshold(findings: list[Finding], cfg: Config) -> None:
             f.status = "below-threshold"
 
 
-# ---------------------------------------------------------------- salida
+# ---------------------------------------------------------------- output
 
 
 ICON = {"critical": "🔴", "high": "🟠", "medium": "🟡", "low": "⚪", "info": "⚪"}
@@ -293,16 +293,16 @@ def render(findings: list[Finding], cfg: Config, problems: list[str]) -> str:
     out = ["<!-- baseline-security-baseline-gate -->", "## Security baseline", ""]
 
     if problems:
-        out += ["### ⛔ Configuración inválida", ""]
+        out += ["### ⛔ Invalid configuration", ""]
         out += [f"- {p}" for p in problems] + [""]
 
     if blocking:
-        out.append(f"**{len(blocking)} hallazgo(s) bloquean este PR** "
-                   f"(umbral: `{cfg.severity}` y superior)")
+        out.append(f"**{len(blocking)} finding(s) block this PR** "
+                   f"(threshold: `{cfg.severity}` and above)")
     elif problems:
-        out.append("**El gate falla por errores en `.security-baseline.yml`** (ver arriba)")
+        out.append("**The gate fails because of errors in `.security-baseline.yml`** (see above)")
     else:
-        out.append("**Sin hallazgos bloqueantes.**")
+        out.append("**No blocking findings.**")
     out.append("")
 
     out += [
@@ -313,32 +313,32 @@ def render(findings: list[Finding], cfg: Config, problems: list[str]) -> str:
     ]
 
     if blocking:
-        out += ["### Bloqueantes", "",
-                "| Sev | Herramienta | Regla | Ubicación | Detalle |",
+        out += ["### Blocking", "",
+                "| Sev | Tool | Rule | Location | Details |",
                 "|---|---|---|---|---|"]
         for f in sorted(blocking, key=lambda x: RANK[x.severity])[:40]:
             loc = f"`{f.path}:{f.line}`" if f.path else "—"
             out.append(f"| {ICON[f.severity]} {f.severity} | {f.tool} | `{f.rule_id}` "
                        f"| {loc} | {f.message[:160]} |")
         if len(blocking) > 40:
-            out.append(f"\n_… y {len(blocking) - 40} más. Ver los artefactos SARIF del job._")
+            out.append(f"\n_… and {len(blocking) - 40} more. See the job's SARIF artifacts._")
         out.append("")
 
     if precut:
-        out += [f"<details><summary>{len(precut)} hallazgo(s) anteriores a la fecha de corte "
-                f"`{cfg.cutoff}` — avisan, no bloquean</summary>", ""]
+        out += [f"<details><summary>{len(precut)} finding(s) before the cutoff date "
+                f"`{cfg.cutoff}` — warn, do not block</summary>", ""]
         for f in sorted(precut, key=lambda x: RANK[x.severity])[:30]:
-            out.append(f"- {ICON[f.severity]} `{f.rule_id}` en `{f.path}:{f.line}` — {f.note}")
+            out.append(f"- {ICON[f.severity]} `{f.rule_id}` in `{f.path}:{f.line}` — {f.note}")
         out += ["", "</details>", ""]
 
     if excepted:
-        out += [f"<details><summary>{len(excepted)} hallazgo(s) con excepción activa</summary>", ""]
+        out += [f"<details><summary>{len(excepted)} finding(s) with an active exception</summary>", ""]
         for f in excepted:
-            out.append(f"- `{f.rule_id}` en `{f.path or '—'}` — {f.note}")
+            out.append(f"- `{f.rule_id}` in `{f.path or '—'}` — {f.note}")
         out += ["", "</details>", ""]
 
-    out.append("<sub>Generado por `pixelotes/ci-security-baseline` · "
-               "las excepciones se declaran en `.security-baseline.yml` y caducan siempre.</sub>")
+    out.append("<sub>Generated by `pixelotes/ci-security-baseline` · "
+               "exceptions are declared in `.security-baseline.yml` and always expire.</sub>")
     return "\n".join(out)
 
 
@@ -351,8 +351,8 @@ def main() -> int:
     ap.add_argument("--config", default=".security-baseline.yml")
     ap.add_argument("--severity-map", default="policy/severity-map.yml")
     ap.add_argument("--repo", default=".")
-    ap.add_argument("--severity", default="", help="sobreescribe gate.severity del repo")
-    ap.add_argument("--cutoff", default="", help="sobreescribe gate.cutoff del repo")
+    ap.add_argument("--severity", default="", help="overrides the repo's gate.severity")
+    ap.add_argument("--cutoff", default="", help="overrides the repo's gate.cutoff")
     args = ap.parse_args()
 
     reports = Path(args.reports)
@@ -368,7 +368,7 @@ def main() -> int:
     for s in sarifs:
         findings.extend(parse_sarif(s, smap))
 
-    print(f"gate: {len(sarifs)} fichero(s) SARIF, {len(findings)} hallazgo(s) en bruto")
+    print(f"gate: {len(sarifs)} SARIF file(s), {len(findings)} raw finding(s)")
 
     apply_threshold(findings, cfg)
     problems = apply_exceptions(findings, cfg)
@@ -396,9 +396,9 @@ def main() -> int:
             fh.write(f"passed={'false' if (blocking or problems) else 'true'}\n")
 
     if problems:
-        print(f"gate: {len(problems)} error(es) de configuración", file=sys.stderr)
+        print(f"gate: {len(problems)} configuration error(s)", file=sys.stderr)
     if blocking:
-        print(f"gate: {len(blocking)} hallazgo(s) bloqueante(s)", file=sys.stderr)
+        print(f"gate: {len(blocking)} blocking finding(s)", file=sys.stderr)
     return 1 if (blocking or problems) else 0
 
 

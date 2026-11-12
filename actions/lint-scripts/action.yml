@@ -1,7 +1,7 @@
 name: 'Lint scripts'
 description: >
-  shellcheck y PSScriptAnalyzer. Shell y PowerShell suelen quedarse fuera de
-  cualquier cobertura de lint, y el coste de añadirlos es casi nulo.
+  shellcheck and PSScriptAnalyzer. Shell and PowerShell usually fall outside
+  any lint coverage, and the cost of adding them is almost nil.
 runs:
   using: composite
   steps:
@@ -11,7 +11,7 @@ runs:
         mapfile -t SH < <(find . -name '*.sh' -not -path './.git/*')
         if [ ${#SH[@]} -gt 0 ]; then
           sudo apt-get install -y shellcheck >/dev/null 2>&1 || true
-          shellcheck -S warning "${SH[@]}" || echo "::warning::shellcheck con hallazgos"
+          shellcheck -S warning "${SH[@]}" || echo "::warning::shellcheck has findings"
         fi
     - shell: pwsh
       run: |

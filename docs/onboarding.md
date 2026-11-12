@@ -1,39 +1,40 @@
-# Adoptar el security baseline
+# Adopting the security baseline
 
-## Qué va a pasar en tu repositorio
+## What will happen in your repository
 
-Se añaden dos ficheros:
+Two files are added:
 
-- `.github/workflows/ci.yml` — llama al baseline. No debe crecer.
-- `.security-baseline.yml` — umbral del gate, fecha de corte y excepciones.
+- `.github/workflows/ci.yml` — calls the baseline. It must not grow.
+- `.security-baseline.yml` — gate threshold, cutoff date and exceptions.
 
-Y aparece un check nuevo llamado **`gate`** en tus pull requests. Es el único
-required check que añade el baseline.
+A new check called **`gate`** also appears on your pull requests. It is the only
+required check the baseline adds.
 
-## Qué hace el gate
+## What the gate does
 
-Los escáneres (opengrep, gitleaks, osv-scanner, trivy, checkov, hadolint) **nunca fallan**.
-Emiten SARIF y siguen. El `gate` los agrega, normaliza la severidad entre
-herramientas, aplica tus excepciones y la fecha de corte, y decide.
+The scanners (opengrep, gitleaks, osv-scanner, trivy, checkov, hadolint) **never fail**.
+They emit SARIF and move on. The `gate` aggregates them, normalizes severity
+across tools, applies your exceptions and the cutoff date, and decides.
 
-Si bloquea, verás en el PR un comentario con la tabla de hallazgos, la
-ubicación exacta y la regla. Ese comentario se actualiza en cada push; no se
-acumulan comentarios.
+If it blocks, you will see a comment on the PR with the findings table, the
+exact location and the rule. That comment is updated on every push; comments
+do not pile up.
 
-## Qué NO bloquea
+## What does NOT block
 
-- El **lint** (checkstyle, ruff, eslint, tflint…) señala calidad, no riesgo.
-  Corre con `continue-on-error` y anota, pero no impide el merge. Mezclarlo con
-  el gate haría que un `prettier` mal configurado bloqueara un hotfix.
-- Los hallazgos **por debajo del umbral** de tu repo (por defecto, todo lo que
-  no sea `high` o `critical`).
-- Los hallazgos **anteriores a la fecha de corte**, durante 90 días.
+- **Lint** (checkstyle, ruff, eslint, tflint…) flags quality, not risk.
+  It runs with `continue-on-error` and annotates, but does not prevent the
+  merge. Mixing it into the gate would let a misconfigured `prettier` block a
+  hotfix.
+- Findings **below the threshold** of your repo (by default, anything that is
+  not `high` or `critical`).
+- Findings **older than the cutoff date**, for 90 days.
 
-## La fecha de corte
+## The cutoff date
 
-Cuando adoptas el baseline en un repo con historia, `cutoff` degrada a aviso
-todo lo introducido antes de esa fecha. Lo que toques a partir de ahí sí
-bloquea.
+When you adopt the baseline in a repo with history, `cutoff` downgrades to a
+warning everything introduced before that date. Anything you touch from then on
+does block.
 
 ```yaml
 gate:
@@ -41,27 +42,27 @@ gate:
   cutoff: '2026-10-01'
 ```
 
-No es una amnistía indefinida: esos hallazgos aparecen en el comentario del PR
-dentro de un desplegable y hay que drenarlos. Pero permite que el gate entre
-en vigor sin parar al equipo el primer día.
+It is not an indefinite amnesty: those findings appear in the PR comment inside
+a collapsible section and have to be drained. But it lets the gate take effect
+without stopping the team on day one.
 
-## Antes del primer commit
+## Before the first commit
 
 ```bash
 pip install pre-commit
 pre-commit install
 ```
 
-El plan Team no incluye push protection en repos privados. Este hook es la
-única barrera antes de que un secreto llegue al servidor.
+The Team plan does not include push protection on private repos. This hook is
+the only barrier before a secret reaches the server.
 
-## Si el gate te bloquea
+## If the gate blocks you
 
-1. **Arréglalo.** Es lo correcto en la mayoría de los casos.
-2. **Si es un falso positivo o no es explotable**, declara una excepción en
-   `.security-baseline.yml`. Ver [exceptions.md](exceptions.md).
-3. **Si crees que la regla está mal**, abre un issue en `ci-security-baseline`:
-   arreglar la regla ahí beneficia a todos los repos. Ver
-   [runbook-falsos-positivos.md](runbook-falsos-positivos.md).
+1. **Fix it.** That is the right call in most cases.
+2. **If it is a false positive or not exploitable**, declare an exception in
+   `.security-baseline.yml`. See [exceptions.md](exceptions.md).
+3. **If you think the rule is wrong**, open an issue in `ci-security-baseline`:
+   fixing the rule there benefits every repo. See
+   [runbook-false-positives.md](runbook-false-positives.md).
 
-Lo que no vale es desactivar el check.
+What is not acceptable is disabling the check.

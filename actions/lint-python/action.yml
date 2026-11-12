@@ -1,7 +1,7 @@
 name: 'Lint Python'
 description: >
-  Ruff sustituye a flake8, isort, pylint y black. Las reglas de seguridad
-  (ruff S*, ex-bandit) se promueven al SAST, donde sí bloquean.
+  Ruff replaces flake8, isort, pylint and black. The security rules
+  (ruff S*, ex-bandit) are promoted to the SAST, where they do block.
 runs:
   using: composite
   steps:
@@ -9,7 +9,7 @@ runs:
       run: pip install --quiet ruff mypy
     - shell: bash
       run: |
-        # C90/SIM/PLR09xx: complejidad, simplificaciones y funciones demasiado grandes (smells)
-        ruff check --extend-select C90,SIM,PLR0911,PLR0912,PLR0913,PLR0915 --output-format=github . || echo "::warning::ruff con hallazgos"
-        ruff format --check . || echo "::warning::formato pendiente"
-        mypy --ignore-missing-imports . || echo "::warning::mypy con hallazgos"
+        # C90/SIM/PLR09xx: complexity, simplifications and oversized functions (smells)
+        ruff check --extend-select C90,SIM,PLR0911,PLR0912,PLR0913,PLR0915 --output-format=github . || echo "::warning::ruff has findings"
+        ruff format --check . || echo "::warning::formatting pending"
+        mypy --ignore-missing-imports . || echo "::warning::mypy has findings"

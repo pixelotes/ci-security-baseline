@@ -1,17 +1,18 @@
-name: 'Dependency-Track: subir SBOM y evaluar política'
+name: 'Dependency-Track: upload SBOM and evaluate policy'
 description: >
-  Sube el CycloneDX a Dependency-Track y consulta las violaciones de política.
-  Este es el gate de dependencias en CD: tiene contexto de VEX, histórico y
-  responsable, no solo un número como un umbral de Trivy.
+  Uploads the CycloneDX SBOM to Dependency-Track and queries its policy
+  violations. This is the dependency gate in CD: it has VEX context, history
+  and an owner, not just a number like a Trivy threshold.
 
-  Dependency-Track es además el reemplazo de la mitad de Xray que Azure
-  Artifacts no cubre: la reevaluación continua de artefactos ya publicados.
+  Dependency-Track is also the replacement for the half of Xray that Azure
+  Artifacts does not cover: continuous re-evaluation of already published
+  artifacts.
 inputs:
-  sbom:            { description: 'Ruta del CycloneDX', required: true }
-  project-name:    { description: 'Nombre del proyecto en DT', required: true }
-  project-version: { description: 'Versión (tag)', required: true }
-  base-url:        { description: 'URL de Dependency-Track', required: true }
-  api-key:         { description: 'API key de DT (desde Key Vault)', required: true }
+  sbom:            { description: 'Path to the CycloneDX SBOM', required: true }
+  project-name:    { description: 'Project name in DT', required: true }
+  project-version: { description: 'Version (tag)', required: true }
+  base-url:        { description: 'Dependency-Track URL', required: true }
+  api-key:         { description: 'DT API key (from Key Vault)', required: true }
   fail-on:         { description: 'critical | high | medium | none', default: 'high' }
 runs:
   using: composite
@@ -22,7 +23,7 @@ runs:
         DT_KEY: ${{ inputs.api-key }}
       run: |
         set -euo pipefail
-        echo "Subiendo SBOM a Dependency-Track…"
+        echo "Uploading SBOM to Dependency-Track…"
         TOKEN=$(curl -sSf -X POST "$DT_URL/api/v1/bom" \
           -H "X-Api-Key: $DT_KEY" \
           -F "autoCreate=true" \
@@ -30,7 +31,7 @@ runs:
           -F "projectVersion=${{ inputs.project-version }}" \
           -F "bom=@${{ inputs.sbom }}" | jq -r '.token')
 
-        echo "Esperando al procesado (token $TOKEN)…"
+        echo "Waiting for processing (token $TOKEN)…"
         for _ in $(seq 1 60); do
           PROC=$(curl -sSf "$DT_URL/api/v1/bom/token/$TOKEN" -H "X-Api-Key: $DT_KEY" | jq -r '.processing')
           [ "$PROC" = "false" ] && break

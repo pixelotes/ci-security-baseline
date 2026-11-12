@@ -1,11 +1,11 @@
-# Copia a baseline.conf (ignorado por git) y ajusta a tu organización.
-# new-repo.sh lo carga para rellenar los valores por defecto de los prompts.
+# Copy to baseline.conf (ignored by git) and adjust to your organization.
+# new-repo.sh loads it to fill in the default values of the prompts.
 
-BASELINE_ORG="mi-usuario"
+BASELINE_ORG="my-user"
 BASELINE_REPO="ci-security-baseline"
 BASELINE_REF="v1"
 
-# Publicación (déjalos vacíos si no usas CD)
+# Publishing (leave empty if you do not use CD)
 DTRACK_URL="https://dependency-track.example.internal"
-ACR_REGISTRY="ghcr.io/mi-usuario"
+ACR_REGISTRY="ghcr.io/my-user"
 AZURE_KEYVAULT="kv-cicd"

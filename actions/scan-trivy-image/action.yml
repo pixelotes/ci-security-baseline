@@ -1,7 +1,7 @@
 name: 'Trivy image'
-description: 'Vulnerabilidades, secretos y misconfig sobre la imagen construida.'
+description: 'Vulnerabilities, secrets and misconfig on the built image.'
 inputs:
-  image: { description: 'Referencia de la imagen', required: true }
+  image: { description: 'Image reference', required: true }
 runs:
   using: composite
   steps:

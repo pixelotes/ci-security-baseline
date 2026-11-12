@@ -1,20 +1,20 @@
-# Allowlist central de Gitleaks para el baseline de la organización.
+# Central Gitleaks allowlist for the organization's baseline.
 #
-# Las excepciones POR REPOSITORIO no van aquí: van en su .security-baseline.yml,
-# donde llevan owner y fecha de caducidad. Este fichero es solo para patrones
-# corporativos que serían falso positivo en cualquier repo.
+# PER-REPOSITORY exceptions do not go here: they go in the repo's
+# .security-baseline.yml, where they carry an owner and an expiry date. This
+# file is only for corporate patterns that would be false positives in any repo.
 
 [extend]
 useDefault = true
 
 [[rules]]
 id = "baseline-internal-token"
-description = "Token de servicio interno de la organización"
+description = "Organization internal service token"
 regex = '''(?i)acme_(sk|pat)_[a-z0-9]{32,}'''
 tags = ["internal", "token"]
 
 [allowlist]
-description = "Falsos positivos corporativos"
+description = "Corporate false positives"
 paths = [
   '''(.*?)(test|tests|spec|fixtures|__mocks__)(/|\\).*''',
   '''(.*?)\.(md|adoc|svg|lock)$''',
@@ -24,10 +24,10 @@ paths = [
   '''(.*?)yarn\.lock$''',
 ]
 regexes = [
-  # Los patrones específicos de la organización (dominios de simulación de
-  # phishing, prefijos de token internos) NO van aquí: este fichero se
-  # versiona y documentaría en claro justo lo que no interesa publicar.
-  # Ponlos en policy/gitleaks.local.toml, fuera del control de versiones.
+  # Organization-specific patterns (phishing simulation domains, internal
+  # token prefixes) do NOT go here: this file is versioned and would document
+  # in plain text exactly what should not be published.
+  # Put them in policy/gitleaks.local.toml, outside version control.
   '''EXAMPLE[_-]?KEY''',
   '''00000000-0000-0000-0000-000000000000''',
 ]
