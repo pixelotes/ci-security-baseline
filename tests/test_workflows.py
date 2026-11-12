@@ -85,3 +85,12 @@ def test_run_container_and_run_iac_are_real_in_every_language_module():
             assert uses.endswith(f"/.github/workflows/{target}@v1"), (path.name, uses)
             assert not uses.startswith("./"), (path.name, uses)
             assert job in as_list(jobs["gate"]["needs"]), f"{path.name}: gate does not wait for {job}"
+
+
+def test_every_action_that_writes_reports_creates_the_directory():
+    """Trivy's `output:` does not create parent directories: the first real run of
+    the container module died on `open reports/trivy-image.sarif: no such file`."""
+    for path in sorted((ROOT / "actions").glob("*/action.yml")):
+        text = path.read_text()
+        if "reports/" in text:
+            assert "mkdir -p" in text, f"{path.parent.name} writes to reports/ without creating it"
