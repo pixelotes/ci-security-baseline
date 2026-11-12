@@ -9,6 +9,7 @@ on:
       severity-gate:  { type: string, default: 'high' }
       cutoff-date:    { type: string, default: '' }
       run-container:  { type: boolean, default: false }
+      run-iac:         { type: boolean, default: false }
 
 permissions:
   contents: read
@@ -88,6 +89,16 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pixelotes/ci-security-baseline/actions/scan-osv@v1
 
+  container:
+    name: dockerfile + image
+    if: inputs.run-container
+    uses: pixelotes/ci-security-baseline/.github/workflows/ci-container.yml@v1
+
+  iac:
+    name: iac
+    if: inputs.run-iac
+    uses: pixelotes/ci-security-baseline/.github/workflows/ci-iac.yml@v1
+
   quality:
     needs: plan
     if: contains(needs.plan.outputs.stages, ',quality,')
@@ -98,7 +109,7 @@ jobs:
       - uses: pixelotes/ci-security-baseline/actions/scan-quality@v1
 
   gate:
-    needs: [plan, build, lint, sast, secrets, sca, quality]
+    needs: [plan, build, lint, sast, secrets, sca, quality, container, iac]
     if: always()
     runs-on: ubuntu-latest
     steps:

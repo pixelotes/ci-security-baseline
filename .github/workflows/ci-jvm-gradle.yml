@@ -100,12 +100,12 @@ jobs:
   container:
     name: dockerfile + image
     if: inputs.run-container
-    uses: ./.github/workflows/ci-container.yml
+    uses: pixelotes/ci-security-baseline/.github/workflows/ci-container.yml@v1
 
   iac:
     name: iac
     if: inputs.run-iac
-    uses: ./.github/workflows/ci-iac.yml
+    uses: pixelotes/ci-security-baseline/.github/workflows/ci-iac.yml@v1
 
   quality:
     needs: plan
@@ -118,7 +118,7 @@ jobs:
 
   gate:
     name: gate
-    needs: [plan, build, lint, sast, secrets, sca, quality]
+    needs: [plan, build, lint, sast, secrets, sca, quality, container, iac]
     if: always()
     runs-on: ubuntu-latest
     steps:

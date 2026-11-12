@@ -61,3 +61,27 @@ def test_gate_needs_every_stage_job_of_the_module():
         stage_jobs = {n for n in jobs if n not in NOT_STAGES}
         needs = set(as_list(jobs["gate"]["needs"]))
         assert stage_jobs <= needs, f"{path.name}: gate misses {stage_jobs - needs}"
+
+
+def declared_inputs(path):
+    doc = yaml.safe_load(path.read_text())
+    return (doc.get(True) or doc.get("on") or {})["workflow_call"].get("inputs", {})
+
+
+def test_run_container_and_run_iac_are_real_in_every_language_module():
+    """An input that no job reads is a silent no-op: it must have its job, wired
+    to the gate, and it must call the module by full reference (a relative
+    ./ path is resolved against the caller's repository)."""
+    modules = [p for p in MODULES if p.stem not in ("ci-container", "ci-iac", "ci-scripts")]
+    assert modules
+    for path in modules:
+        inputs = declared_inputs(path)
+        jobs = jobs_of(path)
+        for flag, job, target in (("run-container", "container", "ci-container.yml"),
+                                  ("run-iac", "iac", "ci-iac.yml")):
+            assert flag in inputs, f"{path.name} lacks input {flag}"
+            assert jobs[job]["if"] == f"inputs.{flag}", path.name
+            uses = jobs[job]["uses"]
+            assert uses.endswith(f"/.github/workflows/{target}@v1"), (path.name, uses)
+            assert not uses.startswith("./"), (path.name, uses)
+            assert job in as_list(jobs["gate"]["needs"]), f"{path.name}: gate does not wait for {job}"

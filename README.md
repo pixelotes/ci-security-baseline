@@ -133,9 +133,9 @@ tools that run in that step. `–` means the step does not apply to that module.
 |---|---|---|---|---|---|---|---|
 | **Java · Maven** (`jvm-maven`) | `mvn verify` · JaCoCo report | Checkstyle · PMD · Spotless | Opengrep | Gitleaks | OSV-Scanner | lizard · jscpd | via `container` / `iac` |
 | **Kotlin · Gradle** (`jvm-gradle`) | `gradle build` · JaCoCo report | detekt · ktlint | Opengrep | Gitleaks | OSV-Scanner | lizard · jscpd | via `container` / `iac` |
-| **Node / TypeScript** (`node`) | `npm ci` · `npm test` | ESLint · `tsc --noEmit` · format check | Opengrep | Gitleaks | OSV-Scanner | lizard · jscpd | via `container` |
-| **Python** (`python`) | `pip install` · pytest | Ruff · mypy | Opengrep | Gitleaks | OSV-Scanner | lizard · jscpd | via `container` |
-| **Go** (`go`) | `go build` · `go test -race` | golangci-lint | Opengrep | Gitleaks | OSV-Scanner · govulncheck | lizard · jscpd | – |
+| **Node / TypeScript** (`node`) | `npm ci` · `npm test` | ESLint · `tsc --noEmit` · format check | Opengrep | Gitleaks | OSV-Scanner | lizard · jscpd | via `container` / `iac` |
+| **Python** (`python`) | `pip install` · pytest | Ruff · mypy | Opengrep | Gitleaks | OSV-Scanner | lizard · jscpd | via `container` / `iac` |
+| **Go** (`go`) | `go build` · `go test -race` | golangci-lint | Opengrep | Gitleaks | OSV-Scanner · govulncheck | lizard · jscpd | via `container` / `iac` |
 | **Container** (`container`) | `docker buildx` (no push) | hadolint | – | – | – | – | Trivy image (vuln · secret · misconfig) |
 | **IaC** (`iac`) | – | terraform fmt/validate · tflint · ansible-lint · helm lint · kubeconform | Checkov | – | – | – | Trivy config (misconfig · secret) |
 | **Scripts** (`scripts`) | – | ShellCheck · PSScriptAnalyzer | – | Gitleaks | – | – | – |
@@ -170,7 +170,8 @@ binaries pinned by checksum):
 Every module ends in the same `gate`, which runs once. `container`, `iac` and
 `scripts` are **additive**, not alternatives to the language modules: a Java
 repo with a Dockerfile and Helm charts calls all three, and the gate runs a
-single time at the end.
+single time at the end. From any language module, switch them on with
+`run-container: true` and `run-iac: true`; the gate waits for both.
 
 Beyond the per-PR modules:
 
