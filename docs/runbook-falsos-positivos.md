@@ -24,7 +24,7 @@ mantener lo mismo.
 
 | Síntoma | Sitio |
 |---|---|
-| Regla de semgrep con demasiado ruido | `policy/semgrep/` o el `config` del módulo |
+| Regla de opengrep con demasiado ruido | `policy/semgrep/` o el `config` del módulo |
 | Gitleaks marca ficheros de test | `policy/gitleaks.toml` → `allowlist.paths` |
 | Severidad desproporcionada de una herramienta | `policy/severity-map.yml` → `overrides` |
 | Checkov con checks no aplicables a la org | `policy/checkov/` |

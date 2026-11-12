@@ -106,9 +106,9 @@ gate:
 |---|---|---|
 | `build` | build and tests | on |
 | `lint` | linters and formatters | on |
-| `sast` | Semgrep | on |
+| `sast` | Opengrep | on |
 | `secret-scan` | Gitleaks on the PR diff | on |
-| `sca` | Trivy filesystem scan (dependencies) | on |
+| `sca` | OSV-Scanner (plus govulncheck for Go) | on |
 | `container-scan` | image build and Trivy image scan | on |
 | `iac-scan` | Checkov and Trivy config | on |
 | `codeql` | CodeQL | **off**, opt-in |
@@ -124,7 +124,7 @@ gate:
 - Narrowing `stages:` weakens the pipeline, so the file is covered by
   `CODEOWNERS`: review changes to it like you would review an exception.
 - `codeql` is free for public repositories; on private repositories it needs
-  GitHub Code Security. That is why it is opt-in and why Semgrep stays the
+  GitHub Code Security. That is why it is opt-in and why Opengrep stays the
   default SAST.
 
 ## Modules and tools
@@ -134,14 +134,33 @@ tools that run in that step. `–` means the step does not apply to that module.
 
 | Module (`ci-*.yml`) | Build & test | Lint & format | SAST | Secrets (PR diff) | Dependencies / SCA | Image & IaC scan |
 |---|---|---|---|---|---|---|
-| **Java · Maven** (`jvm-maven`) | `mvn verify` · JaCoCo report | Checkstyle · PMD · Spotless | Semgrep | Gitleaks | Trivy fs | via `container` / `iac` |
-| **Kotlin · Gradle** (`jvm-gradle`) | `gradle build` · JaCoCo report | detekt · ktlint | Semgrep | Gitleaks | Trivy fs | via `container` / `iac` |
-| **Node / TypeScript** (`node`) | `npm ci` · `npm test` | ESLint · `tsc --noEmit` · format check | Semgrep | Gitleaks | Trivy fs | via `container` |
-| **Python** (`python`) | `pip install` · pytest | Ruff · mypy | Semgrep | Gitleaks | Trivy fs | via `container` |
-| **Go** (`go`) | `go build` · `go test -race` | golangci-lint | Semgrep | Gitleaks | Trivy fs | – |
+| **Java · Maven** (`jvm-maven`) | `mvn verify` · JaCoCo report | Checkstyle · PMD · Spotless | Opengrep | Gitleaks | OSV-Scanner | via `container` / `iac` |
+| **Kotlin · Gradle** (`jvm-gradle`) | `gradle build` · JaCoCo report | detekt · ktlint | Opengrep | Gitleaks | OSV-Scanner | via `container` / `iac` |
+| **Node / TypeScript** (`node`) | `npm ci` · `npm test` | ESLint · `tsc --noEmit` · format check | Opengrep | Gitleaks | OSV-Scanner | via `container` |
+| **Python** (`python`) | `pip install` · pytest | Ruff · mypy | Opengrep | Gitleaks | OSV-Scanner | via `container` |
+| **Go** (`go`) | `go build` · `go test -race` | golangci-lint | Opengrep | Gitleaks | OSV-Scanner · govulncheck | – |
 | **Container** (`container`) | `docker buildx` (no push) | hadolint | – | – | – | Trivy image (vuln · secret · misconfig) |
 | **IaC** (`iac`) | – | terraform fmt/validate · tflint · ansible-lint · helm lint · kubeconform | Checkov | – | – | Trivy config (misconfig · secret) |
 | **Scripts** (`scripts`) | – | ShellCheck · PSScriptAnalyzer | – | Gitleaks | – | – |
+
+Notes on the tool choices, picked for being light and fast (single binaries,
+pinned by checksum, nothing to `pip install`):
+
+- **Opengrep** replaces Semgrep: same rule format and same results on the
+  rulesets we ran (identical finding counts), a ~45 MB binary instead of a
+  ~300 MB Python install, and no telemetry. Rulesets such as `p/ci` come from
+  the Semgrep registry and are covered by the *Semgrep Rules License v1.0*,
+  which allows internal use but not offering them as a service.
+- **OSV-Scanner** replaces Trivy for dependency vulnerabilities. It needs no
+  database to download or cache and finds more advisories (it merges GHSA,
+  PYSEC and others). It queries the osv.dev API with package names and
+  versions, never your code; set `offline: true` in `scan-osv` if even that is
+  too much.
+- **govulncheck** (Go only) reports whether your code actually *calls* the
+  vulnerable function: reachable findings come out as high, unreachable ones as
+  low.
+- **Trivy** stays where nothing else covers it: IaC misconfiguration, image
+  scanning and the nightly full scan (including licenses).
 
 The opt-in `codeql` stage adds CodeQL to the SAST column of the Java/Kotlin,
 Node/TypeScript, Python and Go modules.

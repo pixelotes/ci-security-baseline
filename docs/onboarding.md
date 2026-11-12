@@ -12,7 +12,7 @@ required check que añade el baseline.
 
 ## Qué hace el gate
 
-Los escáneres (semgrep, gitleaks, trivy, checkov, hadolint) **nunca fallan**.
+Los escáneres (opengrep, gitleaks, osv-scanner, trivy, checkov, hadolint) **nunca fallan**.
 Emiten SARIF y siguen. El `gate` los agrega, normaliza la severidad entre
 herramientas, aplica tus excepciones y la fecha de corte, y decide.
 

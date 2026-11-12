@@ -26,9 +26,12 @@ overrides:
   gitleaks:
     '*': high
 
-  semgrep:
+  semgrep: &sast-overrides
     '*.security.*': high
     'generic.secrets.*': high
+
+  # Opengrep lee las mismas reglas y las nombra igual
+  opengrep: *sast-overrides
 
   checkov:
     # exposición pública de recursos: no admite discusión

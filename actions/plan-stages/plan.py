@@ -31,9 +31,9 @@ except ImportError:
 STAGES = {
     "build":          "build and tests",
     "lint":           "linters and formatters",
-    "sast":           "Semgrep",
+    "sast":           "Opengrep",
     "secret-scan":    "Gitleaks on the PR diff",
-    "sca":            "Trivy filesystem scan (dependencies)",
+    "sca":            "OSV-Scanner (plus govulncheck for Go)",
     "container-scan": "image build and Trivy image scan",
     "iac-scan":       "Checkov and Trivy config",
     "codeql":         "CodeQL (opt-in; free for public repositories only)",

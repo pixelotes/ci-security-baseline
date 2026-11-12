@@ -1,0 +1,43 @@
+name: 'OSV-Scanner (SCA)'
+description: >
+  Vulnerabilidades de dependencias a partir de los lockfiles, con OSV-Scanner.
+  Binario único con checksum fijado, sin base de datos que cachear. Emite SARIF
+  y nunca falla por sí mismo: decide el gate.
+
+  Privacidad: por defecto consulta la API de osv.dev con nombres y versiones de
+  paquetes (no con tu código). En repos con dependencias internas sensibles,
+  usa offline: true.
+inputs:
+  offline:
+    description: 'Descarga las bases de datos y consulta en local (más lento)'
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - name: Instalar OSV-Scanner (versión y checksum fijados)
+      shell: bash
+      env:
+        VERSION: v2.7.1
+        SHA256: fb7dab19a8bd9bbe5c3189f09d4b7ee1820c9553a23bac202648a56efd2f6ee8
+      run: |
+        set -euo pipefail
+        mkdir -p "$RUNNER_TEMP/bin"
+        curl -sSfL -o "$RUNNER_TEMP/bin/osv-scanner" \
+          "https://github.com/google/osv-scanner/releases/download/${VERSION}/osv-scanner_linux_amd64"
+        echo "${SHA256}  $RUNNER_TEMP/bin/osv-scanner" | sha256sum -c -
+        chmod +x "$RUNNER_TEMP/bin/osv-scanner"
+    - shell: bash
+      env:
+        OFFLINE: ${{ inputs.offline }}
+      run: |
+        mkdir -p reports
+        FLAGS=()
+        if [ "$OFFLINE" = "true" ]; then
+          FLAGS+=(--offline-vulnerabilities --download-offline-databases)
+        fi
+        # Sale con código 1 cuando hay hallazgos: el corte lo pone el gate.
+        "$RUNNER_TEMP/bin/osv-scanner" scan source -r "${FLAGS[@]}" \
+          --format sarif --output-file reports/osv.sarif . || true
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      if: always()
+      with: { name: sarif-osv, path: reports/osv.sarif, if-no-files-found: warn }

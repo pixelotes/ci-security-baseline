@@ -1,5 +1,8 @@
-name: 'Semgrep (SAST)'
-description: 'SAST del baseline. Emite SARIF y nunca falla por sí mismo: decide el gate.'
+name: 'Opengrep (SAST)'
+description: >
+  SAST del baseline con Opengrep (fork comunitario de Semgrep CE). Binario
+  único con checksum fijado: no instala Python ni dependencias. Emite SARIF y
+  nunca falla por sí mismo: decide el gate.
 inputs:
   config:
     description: 'Rulesets adicionales separados por espacio'
@@ -7,18 +10,32 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Instalar Opengrep (versión y checksum fijados)
+      shell: bash
+      env:
+        VERSION: v1.33.1
+        SHA256: 46e8133cc490f9f50518061590ce2f6be5a08afaeda034471c0ceda4b3899808
+      run: |
+        set -euo pipefail
+        mkdir -p "$RUNNER_TEMP/bin"
+        curl -sSfL -o "$RUNNER_TEMP/bin/opengrep" \
+          "https://github.com/opengrep/opengrep/releases/download/${VERSION}/opengrep_manylinux_x86"
+        echo "${SHA256}  $RUNNER_TEMP/bin/opengrep" | sha256sum -c -
+        chmod +x "$RUNNER_TEMP/bin/opengrep"
     - shell: bash
-      run: pip install --quiet semgrep
-    - shell: bash
+      env:
+        CONFIGS: ${{ inputs.config }}
       run: |
         mkdir -p reports
-        # --error se omite deliberadamente: el corte lo pone el gate, no semgrep.
-        semgrep scan \
-          --sarif --output reports/semgrep.sarif \
-          --metrics off --quiet \
-          $(for c in ${{ inputs.config }}; do echo "--config=$c"; done) \
+        ARGS=()
+        for c in $CONFIGS; do ARGS+=(--config "$c"); done
+        # Sin --error a propósito: el corte lo pone el gate, no el escáner.
+        # Opengrep no envía telemetría, así que no hay flag --metrics.
+        "$RUNNER_TEMP/bin/opengrep" scan --quiet \
+          --sarif --output reports/opengrep.sarif \
+          "${ARGS[@]}" \
           --config "${{ github.action_path }}/../../policy/semgrep" \
           . || true
     - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       if: always()
-      with: { name: sarif-semgrep, path: reports/semgrep.sarif, if-no-files-found: warn }
+      with: { name: sarif-opengrep, path: reports/opengrep.sarif, if-no-files-found: warn }

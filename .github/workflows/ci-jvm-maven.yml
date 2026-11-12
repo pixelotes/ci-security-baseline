@@ -72,11 +72,11 @@ jobs:
   sast:
     needs: plan
     if: contains(needs.plan.outputs.stages, ',sast,')
-    name: semgrep
+    name: opengrep
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: pixelotes/ci-security-baseline/actions/scan-semgrep@v1
+      - uses: pixelotes/ci-security-baseline/actions/scan-opengrep@v1
         with: { config: 'p/ci p/java p/secrets' }
 
   secrets:
@@ -92,11 +92,11 @@ jobs:
   sca:
     needs: plan
     if: contains(needs.plan.outputs.stages, ',sca,')
-    name: trivy fs
+    name: osv-scanner
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: pixelotes/ci-security-baseline/actions/scan-trivy-fs@v1
+      - uses: pixelotes/ci-security-baseline/actions/scan-osv@v1
 
   container:
     name: dockerfile + imagen
