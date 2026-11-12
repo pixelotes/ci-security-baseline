@@ -1,0 +1,25 @@
+version: 2
+updates:
+  # Third-party actions are pinned by SHA with the release tag as a comment;
+  # Dependabot keeps both in sync. Composite actions live under actions/*, so
+  # each folder is listed explicitly.
+  - package-ecosystem: github-actions
+    directories:
+      - "/"
+      - "/actions/*"
+    schedule:
+      interval: weekly
+    # Do not adopt a release the day it ships: a compromised upstream release
+    # is usually noticed within days.
+    cooldown:
+      default-days: 5
+    groups:
+      actions:
+        patterns: ["*"]
+    ignore:
+      # our own references move with the v1 tag, not through Dependabot
+      - dependency-name: "pixelotes/ci-security-baseline*"
+    commit-message:
+      prefix: "chore(actions)"
+
+  # examples/demo-python is deliberately vulnerable: no pip ecosystem here.
